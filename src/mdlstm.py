@@ -4,7 +4,8 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 from image_helper import get_dataset
-import matplotlib.pyplot as plt
+import time
+
 
 """
 https://link.springer.com/chapter/10.1007%2F978-3-540-74690-4_56
@@ -120,11 +121,10 @@ class MDLSTMCell(nn.Module):
         self.b_o = nn.parameter.Parameter(torch.empty(bias_shape))
 
         # Weights of the weighted sum of the cs calculated for each direction
-        self.weighted_sum = nn.parameter.Parameter(torch.rand(2))
-        self.bias = nn.parameter.Parameter(torch.empty(bias_shape))
+        self.weight_sum_1 = nn.parameter.Parameter(torch.rand(1))
+        self.weight_sum_2 = nn.parameter.Parameter(torch.rand(1))
 
     def initialize_weights(self):
-        torch.nn.init.xavier_uniform_(self.bias)
         torch.nn.init.xavier_uniform_(self.w_ii)
         torch.nn.init.xavier_uniform_(self.w_hi)
         torch.nn.init.xavier_uniform_(self.b_i)
@@ -182,8 +182,9 @@ class MDLSTMCell(nn.Module):
         ct1 = ft_1.mul(c_prev_dim1).add(it_1.mul(gt_1))
         ht1 = ot_1.mul(torch.tanh(ct1))
 
-        ct = torch.mul(ct0, self.weighted_sum[0]).add(torch.mul(ct1, self.weighted_sum[1])).add(self.bias)
-        ht = torch.mul(ht0, self.weighted_sum[0]).add(torch.mul(ht1, self.weighted_sum[1])).add(self.bias)
+        # TODO fix this
+        ct = ct0 * self.weight_sum_1 + ct1 * self.weight_sum_2
+        ht = ht0 * self.weight_sum_1 + ht1 * self.weight_sum_2
 
         return ct, ht
 
@@ -269,71 +270,15 @@ class MDLSTM(nn.Module):
                 cell_states[:, direction, :, y_height, x_width] = cs
             direction += 1
         return hidden_states
-
-"""
-image_1 = [[[0., 1., 0., 1.],
-            [1., 0., 1., 0.]],
-
-            [[0., 1., 0., 1.],
-            [1., 0., 1., 0.]],
-
-            [[1., 1., 1., 1.],
-            [1., 0., 0., 0.]]]
-
-image_2 = [[[1., 1., 1., 1.],
-            [1., 1., 1., 1.]],
-
-           [[1., 1., 1., 1.],
-            [1., 1., 1., 1.]],
-
-           [[0., 0., 0., 1.],
-            [1., 0., 0., 0.]]]
-
-image_3 = [[[0., 1., 1., 1.],
-            [0., 1., 1., 1.]],
-
-           [[0., 1., 1., 1.],
-            [0., 1., 1., 1.]],
-
-           [[1., 0., 0., 1.],
-            [0., 0., 0., 0.]]]
-
-image_4 = [[[0., 1., 1., 1.],
-            [0., 1., 1., 1.]],
-
-           [[0., 1., 1., 1.],
-            [0., 1., 1., 1.]],
-
-           [[1., 0., 0., 1.],
-            [0., 0., 3., 0.]]]
-
-image_5 = [[[0., 1., 1., 1.],
-            [0., 1., 1., 1.]],
-
-           [[0., 1., 1., 1.],
-            [0., 1., 1., 1.]],
-
-           [[1., 0., 0., 1.],
-            [0., 0., 2., 0.]]]
-
-image_6 = [[[0., 1., 1., 1.],
-            [0., 1., 1., 1.]],
-
-           [[0., 1., 1., 1.],
-            [0., 1., -1., 1.]],
-
-           [[1., 0., 0., 1.],
-            [0., 0., 0., 0.]]]
-
-images = torch.stack(tensors=[torch.tensor(image_1), torch.tensor(image_2), torch.tensor(image_3)
-    , torch.tensor(image_4), torch.tensor(image_5), torch.tensor(image_6)])
-
-print(images.shape)
 """
 ds = get_dataset('data/00-alphabet', width=50, height=50)
-dataloader = DataLoader(ds, batch_size=4, shuffle=False)
+dataloader = DataLoader(ds, batch_size=10, shuffle=False)
 model = MDLSTM(height=50, width=50, in_nb_channels=1, out_nb_channels=3)
+start = time.time()
 for i, batch_data in enumerate(dataloader):
     data, labels = batch_data
     model.forward(data)
-    exit()
+    print(f"Batch {i} done")
+end = time.time()
+print(f"It took {end - start}")
+"""
