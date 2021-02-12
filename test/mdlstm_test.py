@@ -6,7 +6,7 @@ import time
 sys.path.insert(1, '/opt/projetcs/ich/e2eocr/src')
 from mdlstm import MDLSTM, MDLSTMCell
 
-# in_nb_channels=2, out_nb_channels=3
+# in_channels=2, out_channels=3
 weights = [
     {
         "w_ii": nn.parameter.Parameter(torch.tensor([[0., 1., 2.], [3., 4., 5.]])),
@@ -127,7 +127,7 @@ image_1 = torch.Tensor([
      [-112, -113, -114, -115],
      [-116, -117, -118, -119]]
 ])
-mdlstm_test = MDLSTM(height=5, width=4, in_nb_channels=2, out_nb_channels=3)
+mdlstm_test = MDLSTM(height=5, width=4, in_channels=2, out_channels=3)
 initialize_my_weights(mdlstm_test.lstm_lr_tb, 0)
 initialize_my_weights(mdlstm_test.lstm_rl_tb, 1)
 initialize_my_weights(mdlstm_test.lstm_lr_bt, 2)
@@ -138,9 +138,9 @@ end = time.time()
 print(f"It took {math.ceil((end - start) * 1000)}ms")
 assert computed.shape == torch.Size([1, 4, 3, 5, 4]), 'Computed output does not have the good shape'
 v0 = torch.sigmoid(torch.tensor([-21., -30., -39.]))
-v1 = v0.mul(torch.tanh(torch.tensor([-21., -30., -39.])))
-v2 = v0.mul(torch.tanh(v1)) * 3.
-assert torch.all(computed[0, 0, :, 0, 0].eq(v2)), f'First value in the first direction is not good : {computed[0, 0, :, 0, 0]} VS {v2}'
+c_0_0 = v0.mul(torch.tanh(torch.tensor([-21., -30., -39.])))
+h_0_0 = v0.mul(torch.tanh(c_0_0)) * 3.
+assert torch.all(computed[0, 0, :, 0, 0].eq(h_0_0)), f'First value in the first direction is not good : {computed[0, 0, :, 0, 0]} VS {h_0_0}'
 #assert torch.all(computed[0, 0, :, 0, 1].eq(weights[0]["bias"])), 'First value in the first direction is not good'
 #assert torch.all(computed[0, 0, :, 1, 0].eq(weights[0]["bias"])), 'First value in the first direction is not good'
 #assert torch.all(computed[0, 0, :, 1, 1].eq(weights[0]["bias"])), 'First value in the first direction is not good'
