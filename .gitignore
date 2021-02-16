@@ -1,3 +1,4 @@
 .idea/*
 .venv/*
 *.iml
+src/__pycache__/*

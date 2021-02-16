@@ -14,6 +14,8 @@ class ParagraphReader(nn.Module):
         h, w = self.get_dim_out(height, width)
         self.block1 = MDLSTMConvBlock(height=h, width=w, in_channels=6, out_lstm=10, out_channels=20, kernel=(2, 4))
         h, w = self.get_dim_out(h, w)
+        self.block1 = MDLSTMConvBlock(height=h, width=w, in_channels=20, out_lstm=30, out_channels=50, kernel=(2, 4))
+        h, w = self.get_dim_out(h, w)
         self.mdlstm = MDLSTM(height=h, width=w, in_channels=20, out_channels=50)
         self.dense0 = nn.Linear(in_features=50, out_features=n_dense)
         self.dense1 = nn.Linear(in_features=50, out_features=n_dense)
