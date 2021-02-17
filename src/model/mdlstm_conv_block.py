@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from mdlstm import MDLSTM
+from model.mdlstm import MDLSTM
 
 
 class MDLSTMConvBlock(nn.Module):
@@ -12,6 +12,7 @@ class MDLSTMConvBlock(nn.Module):
         self.conv_1 = nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride)
         self.conv_2 = nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride)
         self.conv_3 = nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride)
+        self.norm = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
         x = self.mdlstm(x)
@@ -19,4 +20,5 @@ class MDLSTMConvBlock(nn.Module):
         x1 = self.conv_0(x[:, 1, :, :, :])
         x2 = self.conv_0(x[:, 2, :, :, :])
         x3 = self.conv_0(x[:, 3, :, :, :])
-        return torch.tanh(x0 + x1 + x2 + x3)
+        return self.norm(torch.tanh(x0 + x1 + x2 + x3))
+        #return torch.tanh(x0 + x1 + x2 + x3)

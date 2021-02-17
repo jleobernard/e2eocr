@@ -34,23 +34,24 @@ class MDLSTMCell(nn.Module):
         # Weights of the weighted sum of the cs calculated for each direction
         self.weight_sum_1 = nn.parameter.Parameter(torch.rand(1))
         self.weight_sum_2 = nn.parameter.Parameter(torch.rand(1))
+        self.initialize_weights()
 
     def initialize_weights(self):
         torch.nn.init.xavier_uniform_(self.w_ii)
         torch.nn.init.xavier_uniform_(self.w_hi)
-        torch.nn.init.xavier_uniform_(self.b_i)
+        torch.nn.init.uniform_(self.b_i)
 
         torch.nn.init.xavier_uniform_(self.w_if)
         torch.nn.init.xavier_uniform_(self.w_hf)
-        torch.nn.init.xavier_uniform_(self.b_f)
+        torch.nn.init.uniform_(self.b_f)
 
         torch.nn.init.xavier_uniform_(self.w_ig)
         torch.nn.init.xavier_uniform_(self.w_hg)
-        torch.nn.init.xavier_uniform_(self.b_g)
+        torch.nn.init.uniform_(self.b_g)
 
         torch.nn.init.xavier_uniform_(self.w_io)
         torch.nn.init.xavier_uniform_(self.w_ho)
-        torch.nn.init.xavier_uniform_(self.b_o)
+        torch.nn.init.uniform_(self.b_o)
 
     def compute(self, x, c_prev_dim0, h_prev_dim0, c_prev_dim1, h_prev_dim1):
         """

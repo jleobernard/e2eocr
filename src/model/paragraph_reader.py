@@ -1,39 +1,41 @@
 import math
-import torch
 import torch.nn as nn
+from model.mdlstm_conv_block import MDLSTMConvBlock
 
-from mdlstm import MDLSTM
-from mdlstm_conv_block import MDLSTMConvBlock
 
+# Size of vocabulary is
+# - 1 blank
+# - 26 unaccentuated letters
+# - 10 numbers
+SIZE_VOC = 1 + 26 + 10
+OUT_CHANNELS_LAST_CNN = 50
 
 class ParagraphReader(nn.Module):
     def __init__(self, height: int, width: int):
         super(ParagraphReader, self).__init__()
-        n_dense = 100
         self.block0 = MDLSTMConvBlock(height=height, width=width, in_channels=1, out_lstm=2, out_channels=6, kernel=(2, 4))
         h, w = self.get_dim_out(height, width)
         self.block1 = MDLSTMConvBlock(height=h, width=w, in_channels=6, out_lstm=10, out_channels=20, kernel=(2, 4))
         h, w = self.get_dim_out(h, w)
-        self.block1 = MDLSTMConvBlock(height=h, width=w, in_channels=20, out_lstm=30, out_channels=50, kernel=(2, 4))
-        h, w = self.get_dim_out(h, w)
-        self.mdlstm = MDLSTM(height=h, width=w, in_channels=20, out_channels=50)
-        self.dense0 = nn.Linear(in_features=50, out_features=n_dense)
-        self.dense1 = nn.Linear(in_features=50, out_features=n_dense)
-        self.dense2 = nn.Linear(in_features=50, out_features=n_dense)
-        self.dense3 = nn.Linear(in_features=50, out_features=n_dense)
+        self.block2 = MDLSTMConvBlock(height=h, width=w, in_channels=20, out_lstm=30, out_channels=OUT_CHANNELS_LAST_CNN, kernel=(2, 4))
+        self.flatten = nn.Flatten(start_dim=-2, end_dim=-1)
+        self.lstm = nn.LSTM(input_size=OUT_CHANNELS_LAST_CNN, hidden_size=50, batch_first=True)
+        self.dense = nn.Linear(in_features=50, out_features=SIZE_VOC)
 
     def forward(self, x):
+        #print(f"Shape at the beginning is {x.shape}")
+        batch_size, _, _, _ = x.shape
         x = self.block0(x)
         x = self.block1(x)
-        x = self.mdlstm(x)
-        # à partir d'ici ça bloque parce que les dimensions ne sont pas bonnes (batch, 50, 16, 14) VS (_, 50, 100)
-        x0 = self.dense0(x[:, 0, :, :, :])
-        x1 = self.dense1(x[:, 1, :, :, :])
-        x2 = self.dense2(x[:, 2, :, :, :])
-        x3 = self.dense3(x[:, 3, :, :, :])
-        final_x = x0 + x1 + x2 + x3
-        # Add CTC here
-        return final_x
+        x = self.block2(x)
+        #print(f"Shape before is {x.shape}")
+        batch_size, in_channels, height, width = x.shape
+        x = x.view(batch_size, height * width, OUT_CHANNELS_LAST_CNN)
+        #print(f"Shape after is {x.shape}")
+        x, _ = self.lstm(x)
+        #print(f"Shape after LSTM is {x.shape}")
+        x = self.dense(x)
+        return x
 
     def get_dim_out(self, height: int, width: int, kernel: (int, int) = (2, 4), stride: int = 2, padding=0, dilatation=1):
         """

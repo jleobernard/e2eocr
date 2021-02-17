@@ -24,8 +24,7 @@ class CustomDataSet(Dataset):
         image = io.imread(img_name)
         if self.transform:
             image = self.transform(image)
-
-        return image, entry.clazz
+        return image, entry.label
 
 
 def get_dataset(path, width=50, height=50):
