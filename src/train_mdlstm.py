@@ -3,6 +3,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
+from model.mdlstm import MDLSTM
 from model.paragraph_reader import ParagraphReader
 from utils.image_helper import get_dataset
 from utils.characters import blank_id
@@ -34,9 +35,9 @@ ds = get_dataset(data_path, width=WIDTH, height=HEIGHT, target_length=MAX_SENTEN
 #exit()
 print(f"...dataset loaded")
 dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False)
-model = ParagraphReader(height=HEIGHT, width=WIDTH)
+model = MDLSTM(height=HEIGHT, width=WIDTH, in_channels=1, out_channels=1)
 model.train()
-loss = nn.CTCLoss(blank=blank_id)
+loss = nn.L1Loss()
 optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
 start = time.time()
 for epoch in range(NUM_EPOCHS):
@@ -45,10 +46,7 @@ for epoch in range(NUM_EPOCHS):
         data, labels = batch_data
         optimizer.zero_grad()
         outputs = model(data)
-        print(f"Shape of ouputs before {outputs.shape}")
-        outputs = outputs.permute(1, 0, 2)
-        print(f"Shape of ouputs after {outputs.shape}")
-        curr_loss = loss(outputs, labels.view(BATCH_SIZE, MAX_SENTENCE_LENGTH), BATCH_SIZE * [outputs.shape[0]], BATCH_SIZE * [MAX_SENTENCE_LENGTH])
+        curr_loss = loss(outputs, data)
         curr_loss.backward()
         optimizer.step()
         running_loss += curr_loss.item()

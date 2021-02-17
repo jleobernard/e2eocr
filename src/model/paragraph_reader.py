@@ -1,13 +1,9 @@
 import math
 import torch.nn as nn
 from model.mdlstm_conv_block import MDLSTMConvBlock
+from utils.characters import characters
 
 
-# Size of vocabulary is
-# - 1 blank
-# - 26 unaccentuated letters
-# - 10 numbers
-SIZE_VOC = 1 + 26 + 10
 OUT_CHANNELS_LAST_CNN = 50
 
 class ParagraphReader(nn.Module):
@@ -20,7 +16,7 @@ class ParagraphReader(nn.Module):
         self.block2 = MDLSTMConvBlock(height=h, width=w, in_channels=20, out_lstm=30, out_channels=OUT_CHANNELS_LAST_CNN, kernel=(2, 4))
         self.flatten = nn.Flatten(start_dim=-2, end_dim=-1)
         self.lstm = nn.LSTM(input_size=OUT_CHANNELS_LAST_CNN, hidden_size=50, batch_first=True)
-        self.dense = nn.Linear(in_features=50, out_features=SIZE_VOC)
+        self.dense = nn.Linear(in_features=50, out_features=len(characters))
 
     def forward(self, x):
         #print(f"Shape at the beginning is {x.shape}")

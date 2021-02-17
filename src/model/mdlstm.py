@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
 import numpy as np
+from typing import List
+
+from utils.tensor_helper import to_best_device
 
 """
 https://link.springer.com/chapter/10.1007%2F978-3-540-74690-4_56
@@ -15,25 +18,25 @@ class MDLSTMCell(nn.Module):
         x_parameters_shape = (in_channels, out_channels)
         h_parameters_shape = (out_channels, out_channels)
         bias_shape = (out_channels)
-        self.w_ii = nn.parameter.Parameter(torch.empty(x_parameters_shape))
-        self.w_hi = nn.parameter.Parameter(torch.empty(h_parameters_shape))
-        self.b_i = nn.parameter.Parameter(torch.empty(bias_shape))
+        self.w_ii = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
+        self.w_hi = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
+        self.b_i = nn.parameter.Parameter(to_best_device(torch.empty(bias_shape)))
 
-        self.w_if = nn.parameter.Parameter(torch.empty(x_parameters_shape))
-        self.w_hf = nn.parameter.Parameter(torch.empty(h_parameters_shape))
-        self.b_f = nn.parameter.Parameter(torch.empty(bias_shape))
+        self.w_if = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
+        self.w_hf = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
+        self.b_f = nn.parameter.Parameter(to_best_device(torch.empty(bias_shape)))
 
-        self.w_ig = nn.parameter.Parameter(torch.empty(x_parameters_shape))
-        self.w_hg = nn.parameter.Parameter(torch.empty(h_parameters_shape))
-        self.b_g = nn.parameter.Parameter(torch.empty(bias_shape))
+        self.w_ig = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
+        self.w_hg = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
+        self.b_g = nn.parameter.Parameter(to_best_device(torch.empty(bias_shape)))
 
-        self.w_io = nn.parameter.Parameter(torch.empty(x_parameters_shape))
-        self.w_ho = nn.parameter.Parameter(torch.empty(h_parameters_shape))
-        self.b_o = nn.parameter.Parameter(torch.empty(bias_shape))
+        self.w_io = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
+        self.w_ho = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
+        self.b_o = nn.parameter.Parameter(to_best_device(torch.empty(bias_shape)))
 
         # Weights of the weighted sum of the cs calculated for each direction
-        self.weight_sum_1 = nn.parameter.Parameter(torch.rand(1))
-        self.weight_sum_2 = nn.parameter.Parameter(torch.rand(1))
+        self.weight_sum_1 = nn.parameter.Parameter(to_best_device(torch.rand(1)))
+        self.weight_sum_2 = nn.parameter.Parameter(to_best_device(torch.rand(1)))
         self.initialize_weights()
 
     def initialize_weights(self):
@@ -80,19 +83,19 @@ class MDLSTMCell(nn.Module):
         xf = x @ self.w_if
         xg = x @ self.w_ig
         xo = x @ self.w_io
-        it_0 = torch.sigmoid(xi.add(h_prev_dim0 @ self.w_hi).add(self.b_i))
-        ft_0 = torch.sigmoid(xf.add(h_prev_dim0 @ self.w_hf).add(self.b_f))
-        gt_0 = torch.tanh(xg.add(h_prev_dim0 @ self.w_hg).add(self.b_g))
-        ot_0 = torch.sigmoid(xo.add(h_prev_dim0 @ self.w_ho).add(self.b_o))
-        ct0 = ft_0.mul(c_prev_dim0).add(it_0.mul(gt_0))
-        ht0 = ot_0.mul(torch.tanh(ct0))
+        it_0 = torch.sigmoid(xi + h_prev_dim0 @ self.w_hi + self.b_i)
+        ft_0 = torch.sigmoid(xf + h_prev_dim0 @ self.w_hf + self.b_f)
+        gt_0 = torch.tanh(xg + h_prev_dim0 @ self.w_hg + self.b_g)
+        ot_0 = torch.sigmoid(xo + h_prev_dim0 @ self.w_ho + self.b_o)
+        ct0 = ft_0 * c_prev_dim0 + it_0 * gt_0
+        ht0 = ot_0 * torch.tanh(ct0)
 
-        it_1 = torch.sigmoid(xi.add(h_prev_dim1 @ self.w_hi).add(self.b_i))
-        ft_1 = torch.sigmoid(xf.add(h_prev_dim1 @ self.w_hf).add(self.b_f))
-        gt_1 = torch.tanh(xg.add(h_prev_dim1 @ self.w_hg).add(self.b_g))
-        ot_1 = torch.sigmoid(xo.add(h_prev_dim1 @ self.w_ho).add(self.b_o))
-        ct1 = ft_1.mul(c_prev_dim1).add(it_1.mul(gt_1))
-        ht1 = ot_1.mul(torch.tanh(ct1))
+        it_1 = torch.sigmoid(xi + h_prev_dim1 @ self.w_hi + self.b_i)
+        ft_1 = torch.sigmoid(xf + h_prev_dim1 @ self.w_hf + self.b_f)
+        gt_1 = torch.tanh(xg + h_prev_dim1 @ self.w_hg + self.b_g)
+        ot_1 = torch.sigmoid(xo + h_prev_dim1 @ self.w_ho + self.b_o)
+        ct1 = ft_1 * c_prev_dim1 + it_1 * gt_1
+        ht1 = ot_1 * torch.tanh(ct1)
 
         ct = ct0 * self.weight_sum_1 + ct1 * self.weight_sum_2
         ht = ht0 * self.weight_sum_1 + ht1 * self.weight_sum_2
@@ -114,10 +117,10 @@ class MDLSTM(nn.Module):
         self.lstm_lr_bt = MDLSTMCell(in_channels=in_channels, out_channels=out_channels)
         self.lstm_rl_bt = MDLSTMCell(in_channels=in_channels, out_channels=out_channels)
         # Indices in the order the lstms need to scan entries
-        self.indices_lr_tb = self.to_coordinates(np.arange(start=0, stop=area, step=1))
-        self.indices_rl_tb = self.to_coordinates(np.concatenate([np.arange((x + 1) * width - 1, x * width - 1, step = -1) for x in range(height)]))
-        self.indices_lr_bt = self.to_coordinates(np.concatenate([np.arange(x * width, (x + 1) * width, step=1) for x in range(height - 1, -1,  -1)]))
-        self.indices_rl_bt = self.to_coordinates(np.arange(start=area - 1, stop=-1, step=-1))
+        self.indices_lr_tb = np.arange(start=0, stop=area, step=1)
+        self.indices_rl_tb = np.concatenate([np.arange((x + 1) * width - 1, x * width - 1, step = -1) for x in range(height)])
+        self.indices_lr_bt = np.concatenate([np.arange(x * width, (x + 1) * width, step=1) for x in range(height - 1, -1,  -1)])
+        self.indices_rl_bt = np.arange(start=area - 1, stop=-1, step=-1)
 
     def to_coordinates(self, indices: list):
         return [(self.to_y(idx), self.to_x(idx)) for idx in indices]
@@ -134,6 +137,20 @@ class MDLSTM(nn.Module):
     def is_dim_1_out(self, x: int, delta: int):
         return x <= 0 if delta < 0 else x >= self.width - 1
 
+    def reorder_for_direction(self, tensor_list: List[torch.Tensor], direction: List[int], desired_shape: tuple) -> torch.Tensor:
+        """
+        Reorder computed hidden states of the tensor list so it matches the left->right/top->bottom order
+
+        :param tensor_list: List of tensors, each containing the hidden state/cell state of a pixel
+        :param direction: list of index swaps
+        :param desired_shape: The shape of the output
+        :return: A tensor with the desired shape
+        """
+        tensor = torch.stack(tensor_list)
+        tensor = torch.index_select(tensor, 0, torch.tensor(direction))
+        result = tensor.permute(1, 2, 0).reshape(desired_shape)
+        return result
+
     def forward(self, x: torch.Tensor):
         """
         :param x: Tensor of size (batch_size, in_channels, height, width)
@@ -141,43 +158,54 @@ class MDLSTM(nn.Module):
         """
         batch_size, in_channels, height, width = x.shape
         # Hidden states will be the output of the function
-        hidden_states = torch.empty((batch_size, 4, self.out_channels, height, width), requires_grad=False)
-        cell_states = torch.empty((batch_size, 4, self.out_channels, height, width), requires_grad=False)
+        global_hidden_states = []
+        global_cell_states = []
         # For each direction we're going to compute hidden_states and their activations
         # Side note : This could be processed in parallel
         params = [{"indices": self.indices_lr_tb, "prev": (-1, -1), "lstm": self.lstm_lr_tb},
                   {"indices": self.indices_rl_tb, "prev": (-1, 1), "lstm": self.lstm_rl_tb},
                   {"indices": self.indices_lr_bt, "prev": (1, -1), "lstm": self.lstm_lr_bt},
                   {"indices": self.indices_rl_bt, "prev": (1, 1), "lstm": self.lstm_rl_bt}]
-        direction = 0
         for param in params:
             prev = param["prev"]
             lstm = param["lstm"]
-            for idx in param["indices"]:
+            hidden_states_direction = []
+            cell_states_direction = []
+            i = 0
+            coordinates = self.to_coordinates(param["indices"])
+            for idx in coordinates:
                 y_height, x_width = idx
                 delta_0, delta_1 = prev
                 # If we're on the first row the previous element is the vector of the good shape with 0s
-                if self.is_dim_0_out(y_height, delta_0):
-                    prev_0_c = torch.zeros((batch_size, self.out_channels))
-                    prev_0_h = torch.zeros((batch_size, self.out_channels))
+                if i - width < 0:
+                    prev_0_c = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
+                    prev_0_h = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
                 else:
                     # Otherwise we get back the previously computed c and h for this direction and coordinates
                     # So the tensors are of the shape (batch_size, out_channels)
-                    prev_0_c = cell_states[:, direction, :, y_height + delta_0, x_width]
-                    prev_0_h = hidden_states[:, direction, :, y_height + delta_0, x_width]
+                    idx_to_prev = i - width
+                    prev_0_c = cell_states_direction[idx_to_prev]
+                    prev_0_h = hidden_states_direction[idx_to_prev]
                 # If we're on the first column the previous element is the vector of the good shape with 0s
-                if self.is_dim_1_out(x_width, delta_1):
-                    prev_1_c = torch.zeros((batch_size, self.out_channels))
-                    prev_1_h = torch.zeros((batch_size, self.out_channels))
+                if i % width == 0:
+                    prev_1_c = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
+                    prev_1_h = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
                 else:
                     # Otherwise we get back the previously computed c and h for this direction and coordinates
                     # So the tensors are of the shape (batch_size, out_channels)
-                    prev_1_c = cell_states[:, direction, :, y_height, x_width + delta_1]
-                    prev_1_h = hidden_states[:, direction, :, y_height, x_width + delta_1]
+                    idx_to_prev = i - 1
+                    prev_1_c = cell_states_direction[idx_to_prev]
+                    prev_1_h = hidden_states_direction[idx_to_prev]
                 # The current input is a tensor of shape (batch_size, input_channels) at coordinates (x,y)
                 current_input = x[:, :, y_height, x_width]
                 cs, hs = lstm.compute(current_input, prev_0_c, prev_0_h, prev_1_c, prev_1_h)
-                hidden_states[:, direction, :, y_height, x_width] = hs
-                cell_states[:, direction, :, y_height, x_width] = cs
-            direction += 1
-        return hidden_states
+                cell_states_direction.append(cs)
+                hidden_states_direction.append(hs)
+                i += 1
+            # Now that we computed the hidden states we need to put them in the correct order for this direction
+            global_hidden_states.append(
+                self.reorder_for_direction(
+                    hidden_states_direction, param["indices"],
+                    (batch_size, self.out_channels, height, width)))
+        # Needs to be transposed because we stacked by direction while we expect the first dimension to be batch
+        return torch.stack(global_hidden_states).transpose(0, 1)

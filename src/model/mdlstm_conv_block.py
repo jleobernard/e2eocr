@@ -21,4 +21,3 @@ class MDLSTMConvBlock(nn.Module):
         x2 = self.conv_0(x[:, 2, :, :, :])
         x3 = self.conv_0(x[:, 3, :, :, :])
         return self.norm(torch.tanh(x0 + x1 + x2 + x3))
-        #return torch.tanh(x0 + x1 + x2 + x3)
