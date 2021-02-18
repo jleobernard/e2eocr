@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 data_path = 'data/train/one-line'
 models_rep = 'data/models'
 load_model = False
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.000001
 NUM_EPOCHS = 10
 BATCH_SIZE = 5
 HEIGHT = 80
@@ -38,7 +38,7 @@ ds = get_dataset(data_path, width=WIDTH, height=HEIGHT, target_length=MAX_SENTEN
 #imshow(ds[8][0])
 #exit()
 print(f"...dataset loaded")
-dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False)
+dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=True)
 model = ParagraphReader(height=HEIGHT, width=WIDTH)
 
 if load_model:
@@ -51,6 +51,7 @@ model.train()
 loss = nn.CTCLoss(blank=blank_id)
 optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
 start = time.time()
+losses =[]
 for epoch in range(NUM_EPOCHS):
     running_loss = 0.0
     for i, batch_data in enumerate(dataloader):
@@ -60,15 +61,16 @@ for epoch in range(NUM_EPOCHS):
         #print(f"Shape of ouputs before {outputs.shape}")
         outputs = outputs.permute(1, 0, 2)
         #print(f"Shape of ouputs after {outputs.shape}")
-        curr_loss = loss(outputs, labels.view(BATCH_SIZE, MAX_SENTENCE_LENGTH), BATCH_SIZE * [outputs.shape[0]], BATCH_SIZE * [MAX_SENTENCE_LENGTH])
+        bs = len(data)
+        curr_loss = loss(outputs.log_softmax(2), labels.view(bs, MAX_SENTENCE_LENGTH), bs * [outputs.shape[0]], bs * [MAX_SENTENCE_LENGTH])
         curr_loss.backward()
         optimizer.step()
         running_loss += curr_loss.item()
-        print(f'[{epoch} - {i}]Batch ended')
-        if epoch % 10 == 0:
-            print(f'[epoch - {epoch}]Loss is {running_loss}')
+    print(f'[{epoch}]Loss is {running_loss}')
+    losses.append(running_loss)
 end = time.time()
 print(f"It took {end - start}")
+plt.plot(losses)
 save_path = f"data/models/{time.time()}.pt"
 print(f"Saving to {save_path}")
 torch.save(model.state_dict(), save_path)
