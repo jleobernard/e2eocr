@@ -118,12 +118,6 @@ NB_IMAGES = 10
 images = torch.rand(NB_IMAGES, 2, 5, 4)
 
 mdlstm_test = MDLSTM(height=5, width=4, in_channels=2, out_channels=3)
-"""
-initialize_my_weights(mdlstm_test.lstm_lr_tb, 0)
-initialize_my_weights(mdlstm_test.lstm_rl_tb, 1)
-initialize_my_weights(mdlstm_test.lstm_lr_bt, 2)
-initialize_my_weights(mdlstm_test.lstm_rl_bt, 3)
-"""
 start = time.time()
 computed = mdlstm_test.forward(images)
 end = time.time()

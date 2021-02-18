@@ -7,6 +7,35 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 import torchvision.transforms.functional as F
 from utils.characters import sentence_to_list
+from PIL import Image, ImageDraw
+import utils.characters as characters
+import random
+
+
+class TextGenerator:
+
+    def generate(self, out_dir: str, nb_images: int, nb_characters: int, height: int, width: int, nb_lines = 1):
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
+        #with open(f"{out_dir}/dataset.csv", "w") as dataset_file:
+        #dataset_file.write("label,file\n")
+        labels = []
+        for i in range(nb_images):
+            label = self.__get_label__(nb_characters)
+            labels.append(label)
+            img = Image.new('RGB', (width, height), color=(255, 255, 255))
+            d = ImageDraw.Draw(img)
+            d.text(self.__get_start_position__(0, nb_lines=nb_lines, nb_characters=nb_characters, dimensions=(width, height)), label, fill=(0, 0, 0), spacing=10)
+            img.save(f'{out_dir}/{i}.png')
+            #dataset_file.write(f"{label},{i}.png\n")
+        pd.DataFrame({'label': labels, 'file': [f'{i}.png' for i, _ in enumerate(labels)]}).to_csv(f"{out_dir}/dataset.csv", index=False)
+
+    def __get_label__(self, nb_characters: int) -> str:
+        return ''.join(random.choices(characters.characters[2:], k=nb_characters)) # We remove the first 2 characters
+
+    def __get_start_position__(self, param, nb_lines, nb_characters, dimensions):
+        width, height = dimensions
+        return random.randint(10, width / 2 - 10), random.randint(10, height - 10)
 
 
 class MyPad(torch.nn.Module):
@@ -19,7 +48,7 @@ class MyPad(torch.nn.Module):
         w, h = image.size
         hp = int((self.width - w) / 2)
         vp = int((self.height - h) / 2)
-        padding = (hp, vp, hp, vp)
+        padding = (hp, vp, self.width - w - hp, self.height - h - vp)
         return F.pad(image, padding, 255, 'constant')
 
 

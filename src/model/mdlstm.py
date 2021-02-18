@@ -148,7 +148,10 @@ class MDLSTM(nn.Module):
         """
         tensor = torch.stack(tensor_list)
         tensor = torch.index_select(tensor, 0, torch.tensor(direction))
-        result = tensor.permute(1, 2, 0).reshape(desired_shape)
+        tensor = tensor.permute(1, 2, 0)
+        #print(f"Desired shape is {desired_shape}")
+        #print(f"Tensor shape is {tensor.shape}")
+        result = tensor.reshape(desired_shape)
         return result
 
     def forward(self, x: torch.Tensor):
