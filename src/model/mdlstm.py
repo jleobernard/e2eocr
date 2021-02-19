@@ -111,7 +111,6 @@ class MDLSTM(nn.Module):
         self.height = height
         area = width * height
         # One LSTM per direction
-        entry_shape = (in_channels, self.height, self.width)
         self.lstm_lr_tb = MDLSTMCell(in_channels=in_channels, out_channels=out_channels)
         self.lstm_rl_tb = MDLSTMCell(in_channels=in_channels, out_channels=out_channels)
         self.lstm_lr_bt = MDLSTMCell(in_channels=in_channels, out_channels=out_channels)
@@ -146,7 +145,7 @@ class MDLSTM(nn.Module):
         :param desired_shape: The shape of the output
         :return: A tensor with the desired shape
         """
-        tensor = torch.stack(tensor_list)
+        tensor = to_best_device(torch.stack(tensor_list))
         tensor = torch.index_select(tensor, 0, torch.tensor(direction))
         tensor = tensor.permute(1, 2, 0)
         #print(f"Desired shape is {desired_shape}")
@@ -211,4 +210,4 @@ class MDLSTM(nn.Module):
                     hidden_states_direction, param["indices"],
                     (batch_size, self.out_channels, height, width)))
         # Needs to be transposed because we stacked by direction while we expect the first dimension to be batch
-        return torch.stack(global_hidden_states).transpose(0, 1)
+        return to_best_device(torch.stack(global_hidden_states).transpose(0, 1))
