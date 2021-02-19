@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from model.paragraph_reader import ParagraphReader
-from utils.characters import index_char, blank_character, void_character
+from utils.characters import index_char, blank_character, void_character, characters
 from utils.image_helper import get_dataset
 from utils.tensor_helper import do_load_model, to_best_device
 
@@ -44,7 +44,7 @@ def from_target_labels(target: torch.Tensor) -> str:
     :return: a trimmed string containing only relevant characters
     """
     as_np = target.cpu().numpy().astype(int)
-    all_chars = [index_char(i) for i in as_np]
+    all_chars = [index_char(i) for i in as_np if i < len(characters)]
     final = []
     current_char = None
     for char in all_chars:
@@ -81,7 +81,7 @@ def from_predicted_labels(predicted: torch.Tensor) -> str:
             current_char = char
             if char == blank_character:
                 pass
-            if char == void_character:
+            elif char == void_character:
                 final.append(" ")
             else:
                 final.append(char)
