@@ -7,8 +7,7 @@ from torch.utils.data import DataLoader
 from model.paragraph_reader import ParagraphReader
 from utils.characters import index_char, blank_character, void_character
 from utils.image_helper import get_dataset
-from utils.tensor_helper import do_load_model
-
+from utils.tensor_helper import do_load_model, to_best_device
 
 if torch.cuda.is_available():
     print("CUDA will be used")
@@ -91,6 +90,8 @@ def from_predicted_labels(predicted: torch.Tensor) -> str:
 
 for i, batch_data in enumerate(dataloader):
     data, labels = batch_data
+    data = to_best_device(data)
+    labels = to_best_device(labels)
     outputs = model(data)
     for j in range(len(outputs)):
         results.append({'target': from_target_labels(labels[j]), 'predicted': from_predicted_labels(outputs[j])})
