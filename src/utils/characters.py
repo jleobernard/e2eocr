@@ -1,5 +1,7 @@
 import string
 
+import torch
+
 
 def split(word: str) -> list:
     return [char for char in word]
@@ -10,6 +12,7 @@ characters = [blank_character, void_character] + split(string.ascii_letters) + s
 
 blank_id = characters.index(blank_character)
 nothing_id = characters.index(void_character)
+pad_id = len(characters)
 
 
 def char_index(char: chr) -> int:
@@ -26,6 +29,11 @@ def index_char(idx):
 
 
 def sentence_to_list(sentence: str, padding: int=100) -> list:
-    return [char_index(char) for char in sentence]
-    #return ([char_index(char) for char in sentence] + padding * [nothing_id])[:padding]
+    return ([char_index(char) for char in sentence] + padding * [pad_id])[:padding]
+
+
+def get_sentence_length(sentence: torch.Tensor) -> int:
+    return (sentence == pad_id).nonzero(as_tuple=True)[0][0].item()
+
+
 

@@ -7,6 +7,7 @@ from model.paragraph_reader import ParagraphReader
 from utils.characters import index_char, blank_character, void_character
 from utils.data_utils import get_last_model_params
 from utils.image_helper import get_dataset
+from utils.tensor_helper import do_load_model
 
 data_path = 'data/test/one-line'
 models_rep = 'data/models'
@@ -23,12 +24,7 @@ print(f"...dataset loaded")
 dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False)
 model = ParagraphReader(height=HEIGHT, width=WIDTH)
 
-last_model_file = get_last_model_params(models_rep)
-if not last_model_file:
-    print(f"No parameters to load from {models_rep}")
-    exit(-1)
-print(f"Loading parameters from {last_model_file}")
-model.load_state_dict(torch.load(last_model_file))
+do_load_model(models_rep, model, exit_on_Error=True)
 
 model.eval()
 start = time.time()

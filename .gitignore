@@ -2,3 +2,4 @@
 .venv/*
 *.iml
 src/__pycache__/*
+data/*

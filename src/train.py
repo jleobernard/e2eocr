@@ -10,10 +10,10 @@ from torch.utils.data import DataLoader
 from model.paragraph_reader import ParagraphReader
 from utils.data_utils import get_last_model_params
 from utils.image_helper import get_dataset
-from utils.characters import blank_id
+from utils.characters import blank_id, get_sentence_length
 import matplotlib.pyplot as plt
 
-from utils.tensor_helper import to_best_device
+from utils.tensor_helper import to_best_device, do_load_model
 
 if torch.cuda.is_available():
     print("CUDA will be used")
@@ -50,13 +50,10 @@ dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=True)
 model = ParagraphReader(height=HEIGHT, width=WIDTH)
 
 if load_model:
-    last_model_file = get_last_model_params(models_rep)
-    if last_model_file:
-        print(f"Loading model parameters from {last_model_file}")
-        model.load_state_dict(torch.load(last_model_file))
+    do_load_model(models_rep, model)
 
 model.train()
-loss = nn.CTCLoss(blank=blank_id)
+loss = to_best_device(nn.CTCLoss(blank=blank_id, zero_infinity=True))
 optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
 start = time.time()
 losses =[]
@@ -68,11 +65,9 @@ for epoch in range(NUM_EPOCHS):
         labels = to_best_device(labels)
         optimizer.zero_grad()
         outputs = model(data)
-        #print(f"Shape of ouputs before {outputs.shape}")
         outputs = outputs.permute(1, 0, 2)
-        #print(f"Shape of ouputs after {outputs.shape}")
         bs = len(data)
-        curr_loss = loss(outputs.log_softmax(2), labels, bs * [outputs.shape[0]], [len(label) for label in labels])
+        curr_loss = loss(outputs.log_softmax(2), labels, bs * [outputs.shape[0]], [get_sentence_length(label) for label in labels])
         curr_loss.backward()
         optimizer.step()
         running_loss += curr_loss.item()
