@@ -43,7 +43,7 @@ def from_target_labels(target: torch.Tensor) -> str:
     and each element containing the index of one of the character
     :return: a trimmed string containing only relevant characters
     """
-    as_np = target.detach().numpy().astype(int)
+    as_np = target.cpu().numpy().astype(int)
     all_chars = [index_char(i) for i in as_np]
     final = []
     current_char = None
