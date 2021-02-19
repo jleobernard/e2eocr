@@ -15,24 +15,13 @@ class MDLSTMCell(nn.Module):
         :param entry_shape: Entry shape
         """
         super(MDLSTMCell, self).__init__()
-        x_parameters_shape = (in_channels, out_channels)
-        h_parameters_shape = (out_channels, out_channels)
-        bias_shape = (out_channels)
-        self.w_ii = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
-        self.w_hi = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
-        self.b_i = nn.parameter.Parameter(to_best_device(torch.empty(bias_shape)))
-
-        self.w_if = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
-        self.w_hf = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
-        self.b_f = nn.parameter.Parameter(to_best_device(torch.empty(bias_shape)))
-
-        self.w_ig = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
-        self.w_hg = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
-        self.b_g = nn.parameter.Parameter(to_best_device(torch.empty(bias_shape)))
-
-        self.w_io = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
-        self.w_ho = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
-        self.b_o = nn.parameter.Parameter(to_best_device(torch.empty(bias_shape)))
+        self.out_channels = out_channels
+        x_parameters_shape = (in_channels, out_channels * 4)
+        h_parameters_shape = (out_channels, out_channels * 4)
+        bias_shape = (out_channels * 4)
+        self.w = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
+        self.u = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
+        self.b = nn.parameter.Parameter(to_best_device(torch.empty(bias_shape)))
 
         # Weights of the weighted sum of the cs calculated for each direction
         self.weight_sum_1 = nn.parameter.Parameter(to_best_device(torch.rand(1)))
@@ -40,21 +29,9 @@ class MDLSTMCell(nn.Module):
         self.initialize_weights()
 
     def initialize_weights(self):
-        torch.nn.init.xavier_uniform_(self.w_ii)
-        torch.nn.init.xavier_uniform_(self.w_hi)
-        torch.nn.init.uniform_(self.b_i)
-
-        torch.nn.init.xavier_uniform_(self.w_if)
-        torch.nn.init.xavier_uniform_(self.w_hf)
-        torch.nn.init.uniform_(self.b_f)
-
-        torch.nn.init.xavier_uniform_(self.w_ig)
-        torch.nn.init.xavier_uniform_(self.w_hg)
-        torch.nn.init.uniform_(self.b_g)
-
-        torch.nn.init.xavier_uniform_(self.w_io)
-        torch.nn.init.xavier_uniform_(self.w_ho)
-        torch.nn.init.uniform_(self.b_o)
+        torch.nn.init.xavier_uniform_(self.w)
+        torch.nn.init.xavier_uniform_(self.w)
+        torch.nn.init.uniform_(self.b)
 
     def compute(self, x, c_prev_dim0, h_prev_dim0, c_prev_dim1, h_prev_dim1):
         """
@@ -79,21 +56,21 @@ class MDLSTMCell(nn.Module):
         and
         https://link.springer.com/chapter/10.1007%2F978-3-540-74690-4_56
         """
-        xi = x @ self.w_ii
-        xf = x @ self.w_if
-        xg = x @ self.w_ig
-        xo = x @ self.w_io
-        it_0 = torch.sigmoid(xi + h_prev_dim0 @ self.w_hi + self.b_i)
-        ft_0 = torch.sigmoid(xf + h_prev_dim0 @ self.w_hf + self.b_f)
-        gt_0 = torch.tanh(xg + h_prev_dim0 @ self.w_hg + self.b_g)
-        ot_0 = torch.sigmoid(xo + h_prev_dim0 @ self.w_ho + self.b_o)
+        gates_0 = x @ self.w + h_prev_dim0 @ self.u + self.b
+        oc = self.out_channels
+        it_0 = torch.sigmoid(gates_0[: , :oc])
+        ft_0 = torch.sigmoid(gates_0[: , oc:oc*2])
+        gt_0 = torch.tanh(gates_0[: , oc*2:oc*3])
+        ot_0 = torch.sigmoid(gates_0[: , oc*3:])
         ct0 = ft_0 * c_prev_dim0 + it_0 * gt_0
         ht0 = ot_0 * torch.tanh(ct0)
 
-        it_1 = torch.sigmoid(xi + h_prev_dim1 @ self.w_hi + self.b_i)
-        ft_1 = torch.sigmoid(xf + h_prev_dim1 @ self.w_hf + self.b_f)
-        gt_1 = torch.tanh(xg + h_prev_dim1 @ self.w_hg + self.b_g)
-        ot_1 = torch.sigmoid(xo + h_prev_dim1 @ self.w_ho + self.b_o)
+        gates_1 = x @ self.w + h_prev_dim1 @ self.u + self.b
+        oc = self.out_channels
+        it_1 = torch.sigmoid(gates_1[: , :oc])
+        ft_1 = torch.sigmoid(gates_1[: , oc:oc*2])
+        gt_1 = torch.tanh(gates_1[: , oc*2:oc*3])
+        ot_1 = torch.sigmoid(gates_1[: , oc*3:])
         ct1 = ft_1 * c_prev_dim1 + it_1 * gt_1
         ht1 = ot_1 * torch.tanh(ct1)
 

@@ -22,7 +22,7 @@ else:
 
 data_path = sys.argv[1] # '/data/train/one-line'
 models_rep = sys.argv[2] # '/data/models'
-load_model = True
+load_model = False
 LEARNING_RATE = 0.0001
 NUM_EPOCHS = int(sys.argv[3]) # 100
 BATCH_SIZE = int(sys.argv[4]) # 100
