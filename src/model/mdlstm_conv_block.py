@@ -13,7 +13,7 @@ class MDLSTMConvBlock(nn.Module):
         self.conv_1 = to_best_device(nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride))
         self.conv_2 = to_best_device(nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride))
         self.conv_3 = to_best_device(nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride))
-        self.norm = nn.BatchNorm2d(out_channels)
+        self.norm = to_best_device(nn.BatchNorm2d(out_channels))
 
     def forward(self, x):
         x = self.mdlstm(x)
