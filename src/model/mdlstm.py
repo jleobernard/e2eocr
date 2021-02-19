@@ -146,7 +146,7 @@ class MDLSTM(nn.Module):
         :return: A tensor with the desired shape
         """
         tensor = to_best_device(torch.stack(tensor_list))
-        tensor = torch.index_select(tensor, 0, torch.tensor(direction))
+        tensor = torch.index_select(tensor, 0, to_best_device(torch.tensor(direction)))
         tensor = tensor.permute(1, 2, 0)
         #print(f"Desired shape is {desired_shape}")
         #print(f"Tensor shape is {tensor.shape}")
