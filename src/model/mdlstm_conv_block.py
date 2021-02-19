@@ -2,16 +2,17 @@ import torch
 import torch.nn as nn
 
 from model.mdlstm import MDLSTM
+from utils.tensor_helper import to_best_device
 
 
 class MDLSTMConvBlock(nn.Module):
     def __init__(self, height: int, width: int, in_channels: int, out_lstm: int, out_channels: int, kernel: (int, int), stride=2):
         super(MDLSTMConvBlock, self).__init__()
         self.mdlstm = MDLSTM(height=height, width=width, in_channels=in_channels, out_channels=out_lstm)
-        self.conv_0 = nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride)
-        self.conv_1 = nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride)
-        self.conv_2 = nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride)
-        self.conv_3 = nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride)
+        self.conv_0 = to_best_device(nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride))
+        self.conv_1 = to_best_device(nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride))
+        self.conv_2 = to_best_device(nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride))
+        self.conv_3 = to_best_device(nn.Conv2d(in_channels=out_lstm, out_channels=out_channels, kernel_size=kernel, stride=stride))
         self.norm = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
