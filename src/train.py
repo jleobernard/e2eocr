@@ -1,18 +1,13 @@
-import os
+import matplotlib.pyplot as plt
 import sys
-from typing import Union
-
 import time
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
 from model.paragraph_reader import ParagraphReader
-from utils.data_utils import get_last_model_params
-from utils.image_helper import get_dataset
 from utils.characters import blank_id, get_sentence_length
-import matplotlib.pyplot as plt
-
+from utils.image_helper import get_dataset
 from utils.tensor_helper import to_best_device, do_load_model
 
 if torch.cuda.is_available():

@@ -1,21 +1,27 @@
 import pandas as pd
 import time
+import sys
 import torch
 from torch.utils.data import DataLoader
 
 from model.paragraph_reader import ParagraphReader
 from utils.characters import index_char, blank_character, void_character
-from utils.data_utils import get_last_model_params
 from utils.image_helper import get_dataset
 from utils.tensor_helper import do_load_model
 
-data_path = 'data/test/one-line'
-models_rep = 'data/models'
+
+if torch.cuda.is_available():
+    print("CUDA will be used")
+else:
+    print("CUDA won't be used")
+
+data_path = sys.argv[1] # '/data/train/one-line'
+models_rep = sys.argv[2] # '/data/models'
 
 BATCH_SIZE = 5
 HEIGHT = 80
 WIDTH = 80
-MAX_SENTENCE_LENGTH = 10
+MAX_SENTENCE_LENGTH = int(sys.argv[3])
 
 
 print(f"Loading dataset from {data_path}...")
