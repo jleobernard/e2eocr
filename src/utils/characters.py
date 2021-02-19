@@ -26,5 +26,6 @@ def index_char(idx):
 
 
 def sentence_to_list(sentence: str, padding: int=100) -> list:
-    return ([char_index(char) for char in sentence] + padding * [nothing_id])[:padding]
+    return [char_index(char) for char in sentence]
+    #return ([char_index(char) for char in sentence] + padding * [nothing_id])[:padding]
 

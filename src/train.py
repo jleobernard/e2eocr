@@ -14,9 +14,9 @@ import matplotlib.pyplot as plt
 
 data_path = 'data/train/one-line'
 models_rep = 'data/models'
-load_model = False
-LEARNING_RATE = 0.000001
-NUM_EPOCHS = 10
+load_model = True
+LEARNING_RATE = 0.0001
+NUM_EPOCHS = 100
 BATCH_SIZE = 5
 HEIGHT = 80
 WIDTH = 80
@@ -62,7 +62,7 @@ for epoch in range(NUM_EPOCHS):
         outputs = outputs.permute(1, 0, 2)
         #print(f"Shape of ouputs after {outputs.shape}")
         bs = len(data)
-        curr_loss = loss(outputs.log_softmax(2), labels.view(bs, MAX_SENTENCE_LENGTH), bs * [outputs.shape[0]], bs * [MAX_SENTENCE_LENGTH])
+        curr_loss = loss(outputs.log_softmax(2), labels, bs * [outputs.shape[0]], [len(label) for label in labels])
         curr_loss.backward()
         optimizer.step()
         running_loss += curr_loss.item()
@@ -70,8 +70,9 @@ for epoch in range(NUM_EPOCHS):
     losses.append(running_loss)
 end = time.time()
 print(f"It took {end - start}")
-plt.plot(losses)
 save_path = f"data/models/{time.time()}.pt"
 print(f"Saving to {save_path}")
 torch.save(model.state_dict(), save_path)
 print("Done")
+plt.plot(losses)
+plt.show()
