@@ -52,7 +52,7 @@ def from_target_labels(target: torch.Tensor) -> str:
             current_char = char
             if char == blank_character:
                 pass
-            if char == void_character:
+            elif char == void_character:
                 final.append(" ")
             else:
                 final.append(char)
