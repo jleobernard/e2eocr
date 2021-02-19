@@ -80,7 +80,7 @@ for epoch in range(NUM_EPOCHS):
     losses.append(running_loss)
 end = time.time()
 print(f"It took {end - start}")
-save_path = f"data/models/{time.time()}.pt"
+save_path = f"{models_rep}/{time.time()}.pt"
 print(f"Saving to {save_path}")
 torch.save(model.state_dict(), save_path)
 print("Done")
