@@ -24,12 +24,12 @@ data_path = sys.argv[1] # '/data/train/one-line'
 models_rep = sys.argv[2] # '/data/models'
 load_model = True
 LEARNING_RATE = 0.0001
-NUM_EPOCHS = sys.argv[3] # 100
-BATCH_SIZE = sys.argv[4] # 100
-HEIGHT = sys.argv[5] # 80
-WIDTH = sys.argv[6] # 80
+NUM_EPOCHS = int(sys.argv[3]) # 100
+BATCH_SIZE = int(sys.argv[4]) # 100
+HEIGHT = int(sys.argv[5]) # 80
+WIDTH = int(sys.argv[6]) # 80
 MOMENTUM = 0.9
-MAX_SENTENCE_LENGTH = sys.argv[7] # 10
+MAX_SENTENCE_LENGTH = int(sys.argv[7]) # 10
 
 
 def imshow(inp):
