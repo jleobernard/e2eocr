@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Union
 
 import time
@@ -19,16 +20,16 @@ if torch.cuda.is_available():
 else:
     print("CUDA won't be used")
 
-data_path = '/data/train/one-line'
-models_rep = '/data/models'
+data_path = sys.argv[1] # '/data/train/one-line'
+models_rep = sys.argv[2] # '/data/models'
 load_model = True
 LEARNING_RATE = 0.0001
-NUM_EPOCHS = 100
-BATCH_SIZE = 5
-HEIGHT = 80
-WIDTH = 80
+NUM_EPOCHS = sys.argv[3] # 100
+BATCH_SIZE = sys.argv[4] # 100
+HEIGHT = sys.argv[5] # 80
+WIDTH = sys.argv[6] # 80
 MOMENTUM = 0.9
-MAX_SENTENCE_LENGTH = 10
+MAX_SENTENCE_LENGTH = sys.argv[7] # 10
 
 
 def imshow(inp):
