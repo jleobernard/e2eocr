@@ -12,6 +12,13 @@ from utils.image_helper import get_dataset
 from utils.characters import blank_id
 import matplotlib.pyplot as plt
 
+from utils.tensor_helper import to_best_device
+
+if torch.cuda.is_available():
+    print("CUDA will be used")
+else:
+    print("CUDA won't be used")
+
 data_path = '/data/train/one-line'
 models_rep = '/data/models'
 load_model = True
@@ -56,6 +63,8 @@ for epoch in range(NUM_EPOCHS):
     running_loss = 0.0
     for i, batch_data in enumerate(dataloader):
         data, labels = batch_data
+        data = to_best_device(data)
+        labels = to_best_device(labels)
         optimizer.zero_grad()
         outputs = model(data)
         #print(f"Shape of ouputs before {outputs.shape}")
