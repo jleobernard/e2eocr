@@ -30,7 +30,7 @@ print(f"...dataset loaded")
 dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False)
 model = ParagraphReader(height=HEIGHT, width=WIDTH)
 
-do_load_model(models_rep, model, exit_on_Error=True)
+do_load_model(models_rep, model, exit_on_error=True)
 
 model.eval()
 start = time.time()
