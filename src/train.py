@@ -12,8 +12,8 @@ from utils.image_helper import get_dataset
 from utils.characters import blank_id
 import matplotlib.pyplot as plt
 
-data_path = 'data/train/one-line'
-models_rep = 'data/models'
+data_path = '/data/train/one-line'
+models_rep = '/data/models'
 load_model = True
 LEARNING_RATE = 0.0001
 NUM_EPOCHS = 100
