@@ -68,10 +68,13 @@ for epoch in range(NUM_EPOCHS):
         optimizer.step()
         running_loss += curr_loss.item()
     print(f'[{epoch}]Loss is {running_loss}')
+    if epoch % 20 == 19:
+        path_to_epoch_file = f"{models_rep}/{time.time()}-{epoch}.pt"
+        print(f'Saving epoch {epoch} in {path_to_epoch_file} with loss {running_loss}')
     losses.append(running_loss)
 end = time.time()
 print(f"It took {end - start}")
-save_path = f"{models_rep}/{time.time()}.pt"
+save_path = f"{models_rep}/{time.time()}-final.pt"
 print(f"Saving to {save_path}")
 torch.save(model.state_dict(), save_path)
 print("Done")
