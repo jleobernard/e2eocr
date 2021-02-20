@@ -30,7 +30,7 @@ class MDLSTMCell(nn.Module):
 
     def initialize_weights(self):
         torch.nn.init.xavier_uniform_(self.w)
-        torch.nn.init.xavier_uniform_(self.w)
+        torch.nn.init.xavier_uniform_(self.u)
         torch.nn.init.uniform_(self.b)
 
     def compute(self, x, c_prev_dim0, h_prev_dim0, c_prev_dim1, h_prev_dim1):

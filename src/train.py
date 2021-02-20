@@ -1,18 +1,13 @@
-import os
+import matplotlib.pyplot as plt
 import sys
-from typing import Union
-
 import time
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
 from model.paragraph_reader import ParagraphReader
-from utils.data_utils import get_last_model_params
-from utils.image_helper import get_dataset
 from utils.characters import blank_id, get_sentence_length
-import matplotlib.pyplot as plt
-
+from utils.image_helper import get_dataset
 from utils.tensor_helper import to_best_device, do_load_model
 
 if torch.cuda.is_available():
@@ -22,8 +17,8 @@ else:
 
 data_path = sys.argv[1] # '/data/train/one-line'
 models_rep = sys.argv[2] # '/data/models'
-load_model = False
-LEARNING_RATE = 0.0001
+load_model = True
+LEARNING_RATE = 0.00001
 NUM_EPOCHS = int(sys.argv[3]) # 100
 BATCH_SIZE = int(sys.argv[4]) # 100
 HEIGHT = int(sys.argv[5]) # 80

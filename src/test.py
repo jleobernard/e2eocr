@@ -1,21 +1,26 @@
 import pandas as pd
 import time
+import sys
 import torch
 from torch.utils.data import DataLoader
 
 from model.paragraph_reader import ParagraphReader
-from utils.characters import index_char, blank_character, void_character
-from utils.data_utils import get_last_model_params
+from utils.characters import index_char, blank_character, void_character, characters
 from utils.image_helper import get_dataset
-from utils.tensor_helper import do_load_model
+from utils.tensor_helper import do_load_model, to_best_device
 
-data_path = 'data/test/one-line'
-models_rep = 'data/models'
+if torch.cuda.is_available():
+    print("CUDA will be used")
+else:
+    print("CUDA won't be used")
+
+data_path = sys.argv[1] # '/data/train/one-line'
+models_rep = sys.argv[2] # '/data/models'
 
 BATCH_SIZE = 5
 HEIGHT = 80
 WIDTH = 80
-MAX_SENTENCE_LENGTH = 10
+MAX_SENTENCE_LENGTH = int(sys.argv[3])
 
 
 print(f"Loading dataset from {data_path}...")
@@ -24,7 +29,7 @@ print(f"...dataset loaded")
 dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False)
 model = ParagraphReader(height=HEIGHT, width=WIDTH)
 
-do_load_model(models_rep, model, exit_on_Error=True)
+do_load_model(models_rep, model, exit_on_error=True)
 
 model.eval()
 start = time.time()
@@ -38,8 +43,8 @@ def from_target_labels(target: torch.Tensor) -> str:
     and each element containing the index of one of the character
     :return: a trimmed string containing only relevant characters
     """
-    as_np = target.numpy().astype(int)
-    all_chars = [index_char(i) for i in as_np]
+    as_np = target.cpu().numpy().astype(int)
+    all_chars = [index_char(i) for i in as_np if i < len(characters)]
     final = []
     current_char = None
     for char in all_chars:
@@ -47,7 +52,7 @@ def from_target_labels(target: torch.Tensor) -> str:
             current_char = char
             if char == blank_character:
                 pass
-            if char == void_character:
+            elif char == void_character:
                 final.append(" ")
             else:
                 final.append(char)
@@ -76,7 +81,7 @@ def from_predicted_labels(predicted: torch.Tensor) -> str:
             current_char = char
             if char == blank_character:
                 pass
-            if char == void_character:
+            elif char == void_character:
                 final.append(" ")
             else:
                 final.append(char)
@@ -85,6 +90,8 @@ def from_predicted_labels(predicted: torch.Tensor) -> str:
 
 for i, batch_data in enumerate(dataloader):
     data, labels = batch_data
+    data = to_best_device(data)
+    labels = to_best_device(labels)
     outputs = model(data)
     for j in range(len(outputs)):
         results.append({'target': from_target_labels(labels[j]), 'predicted': from_predicted_labels(outputs[j])})
