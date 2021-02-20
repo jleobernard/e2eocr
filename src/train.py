@@ -22,7 +22,8 @@ NUM_EPOCHS = int(sys.argv[3]) # 100
 BATCH_SIZE = int(sys.argv[4]) # 100
 HEIGHT = int(sys.argv[5]) # 80
 WIDTH = int(sys.argv[6]) # 80
-LEARNING_RATE = float(sys.argv[7]) # 0.00001
+#LEARNING_RATE = float(sys.argv[7]) # 0.00001
+LEARNING_RATE = 0.00001
 MOMENTUM = 0.9
 MAX_SENTENCE_LENGTH = int(sys.argv[7]) # 10
 
