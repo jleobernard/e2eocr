@@ -16,21 +16,25 @@ class MDLSTMCell(nn.Module):
         """
         super(MDLSTMCell, self).__init__()
         self.out_channels = out_channels
-        x_parameters_shape = (in_channels, out_channels * 4)
-        h_parameters_shape = (out_channels, out_channels * 4)
-        bias_shape = (out_channels * 4)
-        self.w = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
-        self.u = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
+        x_parameters_shape = (in_channels, out_channels * 5)
+        h_parameters_shape = (out_channels, out_channels * 5)
+        bias_shape = (out_channels * 5)
+        self.w0 = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
+        self.u0 = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
+        self.w1 = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
+        self.u1 = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
         self.b = nn.parameter.Parameter(to_best_device(torch.empty(bias_shape)))
 
         # Weights of the weighted sum of the cs calculated for each direction
-        self.weight_sum_1 = nn.parameter.Parameter(to_best_device(torch.rand(1)))
-        self.weight_sum_2 = nn.parameter.Parameter(to_best_device(torch.rand(1)))
+        #self.weight_sum_1 = nn.parameter.Parameter(to_best_device(torch.rand(1)))
+        #self.weight_sum_2 = nn.parameter.Parameter(to_best_device(torch.rand(1)))
         self.initialize_weights()
 
     def initialize_weights(self):
-        torch.nn.init.xavier_uniform_(self.w)
-        torch.nn.init.xavier_uniform_(self.u)
+        torch.nn.init.xavier_uniform_(self.w0)
+        torch.nn.init.xavier_uniform_(self.u0)
+        torch.nn.init.xavier_uniform_(self.w1)
+        torch.nn.init.xavier_uniform_(self.u1)
         torch.nn.init.uniform_(self.b)
 
     def compute(self, x, c_prev_dim0, h_prev_dim0, c_prev_dim1, h_prev_dim1):
@@ -56,28 +60,22 @@ class MDLSTMCell(nn.Module):
         and
         https://link.springer.com/chapter/10.1007%2F978-3-540-74690-4_56
         """
-        gates_0 = x @ self.w + h_prev_dim0 @ self.u + self.b
+        gates_0 = x @ self.w0 + h_prev_dim0 @ self.u0 + h_prev_dim1 @ self.u1 + self.b
         oc = self.out_channels
         it_0 = torch.sigmoid(gates_0[: , :oc])
         ft_0 = torch.sigmoid(gates_0[: , oc:oc*2])
         gt_0 = torch.tanh(gates_0[: , oc*2:oc*3])
-        ot_0 = torch.sigmoid(gates_0[: , oc*3:])
-        ct0 = ft_0 * c_prev_dim0 + it_0 * gt_0
+        ot_0 = torch.sigmoid(gates_0[: , oc*3:oc*4])
+        lt_0 = torch.sigmoid(gates_0[: , oc*4:]) # The lambda gte
+        ct0 = ft_0 * ((lt_0 * c_prev_dim0) + ((1 - lt_0) * c_prev_dim1)) + it_0 * gt_0
         ht0 = ot_0 * torch.tanh(ct0)
 
-        gates_1 = x @ self.w + h_prev_dim1 @ self.u + self.b
-        oc = self.out_channels
-        it_1 = torch.sigmoid(gates_1[: , :oc])
-        ft_1 = torch.sigmoid(gates_1[: , oc:oc*2])
-        gt_1 = torch.tanh(gates_1[: , oc*2:oc*3])
-        ot_1 = torch.sigmoid(gates_1[: , oc*3:])
-        ct1 = ft_1 * c_prev_dim1 + it_1 * gt_1
-        ht1 = ot_1 * torch.tanh(ct1)
+        return ct0, ht0
 
-        ct = ct0 * self.weight_sum_1 + ct1 * self.weight_sum_2
-        ht = ht0 * self.weight_sum_1 + ht1 * self.weight_sum_2
+        #ct = ct0 * self.weight_sum_1 + ct1 * self.weight_sum_2
+        #ht = ht0 * self.weight_sum_1 + ht1 * self.weight_sum_2
 
-        return ct, ht
+        #return ct, ht
 
 
 class MDLSTM(nn.Module):
@@ -172,7 +170,6 @@ class MDLSTM(nn.Module):
         coordinates = self.to_coordinates(param["indices"])
         for idx in coordinates:
             y_height, x_width = idx
-            delta_0, delta_1 = prev
             # If we're on the first row the previous element is the vector of the good shape with 0s
             if i - width < 0:
                 prev_0_c = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
