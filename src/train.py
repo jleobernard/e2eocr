@@ -70,7 +70,7 @@ if load_model:
     do_load_model(models_rep, model)
 
 model.train()
-loss = to_best_device(nn.CTCLoss(blank=blank_id, zero_infinity=True))
+loss = to_best_device(nn.CTCLoss(blank=blank_id, zero_infinity=True, reduction='none'))
 optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
 start = time.time()
 losses =[]
