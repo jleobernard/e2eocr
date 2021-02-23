@@ -27,7 +27,7 @@ print(f"Loading dataset from {data_path}...")
 ds = get_dataset(data_path, width=WIDTH, height=HEIGHT, target_length=MAX_SENTENCE_LENGTH)
 print(f"...dataset loaded")
 dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False)
-model = ParagraphReader(height=HEIGHT, width=WIDTH)
+model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH))
 
 do_load_model(models_rep, model, exit_on_error=True)
 

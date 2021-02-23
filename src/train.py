@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import sys
 import time
 import torch
+import argparse
 from torch import nn
 from torch.utils.data import DataLoader
 
@@ -15,16 +16,37 @@ if torch.cuda.is_available():
 else:
     print("CUDA won't be used")
 
-data_path = sys.argv[1] # '/data/train/one-line'
-models_rep = sys.argv[2] # '/data/models'
-load_model = True
-LEARNING_RATE = 0.000001
-NUM_EPOCHS = int(sys.argv[3]) # 100
-BATCH_SIZE = int(sys.argv[4]) # 100
-HEIGHT = int(sys.argv[5]) # 80
-WIDTH = int(sys.argv[6]) # 80
+parser = argparse.ArgumentParser(description='Train the model.')
+parser.add_argument('--data', dest='data_path',
+                    help='Path to the folder containing training data')
+parser.add_argument('--models', dest='models_path',
+                    help='Path to the folder containing the models (load and save)')
+parser.add_argument('--epoch', dest='epoch', default=10,
+                    help='Path to the folder containing training data')
+parser.add_argument('--batch', dest='batch', default=10,
+                    help='Number of images per batch')
+parser.add_argument('--height', dest='height', default=80,
+                    help='Height of source images')
+parser.add_argument('--width', dest='width', default=80,
+                    help='Width of source images')
+parser.add_argument('--sentence', dest='sentence', default=10,
+                    help='Max length of sentences')
+parser.add_argument('--lr', dest='lr', default=10,
+                    help='Learning rate')
+parser.add_argument('--load', dest='load', default=False,
+                    help='Load model if true')
+args = parser.parse_args()
+
+data_path = args.data_path
+models_rep = args.models_path
+load_model = 'True' == args.load
+NUM_EPOCHS = int(args.epoch)
+BATCH_SIZE = int(args.batch)
+HEIGHT = int(args.height)
+WIDTH = int(args.width) # 80
 MOMENTUM = 0.9
-MAX_SENTENCE_LENGTH = int(sys.argv[7]) # 10
+MAX_SENTENCE_LENGTH = int(args.sentence) # 10
+LEARNING_RATE = float(args.lr) # 0.00001
 
 
 def imshow(inp):
@@ -42,7 +64,7 @@ ds = get_dataset(data_path, width=WIDTH, height=HEIGHT, target_length=MAX_SENTEN
 #exit()
 print(f"...dataset loaded")
 dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=True)
-model = ParagraphReader(height=HEIGHT, width=WIDTH)
+model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH))
 
 if load_model:
     do_load_model(models_rep, model)
@@ -67,10 +89,14 @@ for epoch in range(NUM_EPOCHS):
         optimizer.step()
         running_loss += curr_loss.item()
     print(f'[{epoch}]Loss is {running_loss}')
+    if epoch % 20 == 19:
+        path_to_epoch_file = f"{models_rep}/{time.time()}-{epoch}.pt"
+        print(f'Saving epoch {epoch} in {path_to_epoch_file} with loss {running_loss}')
+        torch.save(model.state_dict(), path_to_epoch_file)
     losses.append(running_loss)
 end = time.time()
 print(f"It took {end - start}")
-save_path = f"{models_rep}/{time.time()}.pt"
+save_path = f"{models_rep}/{time.time()}-final.pt"
 print(f"Saving to {save_path}")
 torch.save(model.state_dict(), save_path)
 print("Done")
