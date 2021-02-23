@@ -1,4 +1,5 @@
 import math
+import torch
 import torch.nn as nn
 from model.mdlstm_conv_block import MDLSTMConvBlock
 from utils.characters import characters
@@ -21,9 +22,9 @@ class ParagraphReader(nn.Module):
         batch_size, _, _, _ = x.shape
         x = self.block0(x)
         x = self.block1(x)
-        x = self.block2(x)
-        batch_size, in_channels, height, width = x.shape
-        x = x.view(batch_size, height * width, OUT_CHANNELS_LAST_CNN)
+        x = self.block2(x) # batch_size, in_channels, height, width = x.shape
+        x = torch.flatten(x, start_dim=2) # batch_size, in_channels, height * width = x.shape
+        x = x.permute(0, 2, 1) # height * width, batch_size, in_channels = x.shape
         x, _ = self.lstm(x)
         x = self.dense(x)
         return x
