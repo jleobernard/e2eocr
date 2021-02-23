@@ -96,6 +96,12 @@ class MDLSTM(nn.Module):
         self.indices_lr_bt = np.concatenate([np.arange(x * width, (x + 1) * width, step=1) for x in range(height - 1, -1,  -1)])
         self.indices_rl_bt = np.arange(start=area - 1, stop=-1, step=-1)
 
+        self.params = [{"indices": self.indices_lr_tb, "prev": (-1, -1), "lstm": self.lstm_lr_tb},
+                  {"indices": self.indices_rl_tb, "prev": (-1, 1), "lstm": self.lstm_rl_tb},
+                  {"indices": self.indices_lr_bt, "prev": (1, -1), "lstm": self.lstm_lr_bt},
+                  {"indices": self.indices_rl_bt, "prev": (1, 1), "lstm": self.lstm_rl_bt}]
+        self.fold = torch.nn.Fold(output_size=(self.height, self.width), kernel_size=(1, 1))
+
     def to_coordinates(self, indices: list):
         return [(self.to_y(idx), self.to_x(idx)) for idx in indices]
 
@@ -126,48 +132,49 @@ class MDLSTM(nn.Module):
         result = tensor.reshape(desired_shape)
         return result
 
+    def flipped_image(self, x: torch.Tensor, direction: int):
+        if direction == 0: # LRTP
+            return x
+        elif direction == 1: # RLTB
+            return torch.flip(x, (3,))
+        elif direction == 2: # LRBT
+            return torch.flip(x, (2,))
+        elif direction == 3: # RLBT
+            return torch.flip(x, (2, 3,))
+
     def forward(self, x: torch.Tensor):
         """
         :param x: Tensor of size (batch_size, in_channels, height, width)
         :return: Tensor of size (batch_size, 4, out_channels, height, width)
         """
-        batch_size, in_channels, height, width = x.shape
-        # Hidden states will be the output of the function
-        global_hidden_states = []
         # For each direction we're going to compute hidden_states and their activations
         # Side note : This could be processed in parallel
-        params = [{"indices": self.indices_lr_tb, "prev": (-1, -1), "lstm": self.lstm_lr_tb},
-                  {"indices": self.indices_rl_tb, "prev": (-1, 1), "lstm": self.lstm_rl_tb},
-                  {"indices": self.indices_lr_bt, "prev": (1, -1), "lstm": self.lstm_lr_bt},
-                  {"indices": self.indices_rl_bt, "prev": (1, 1), "lstm": self.lstm_rl_bt}]
-        global_hidden_states = len(params) * [None]
-        streams = [torch.cuda.Stream() for param in params] if cuda_available else []
+        global_hidden_states = len(self.params) * [None]
+        streams = [torch.cuda.Stream() for _ in self.params] if cuda_available else []
         if cuda_available:
             torch.cuda.synchronize()
-        for i, param in enumerate(params):
+        for i, param in enumerate(self.params):
+            x_ordered = self.flipped_image(x, direction=i)
             if cuda_available:
                 stream = streams[i]
                 with torch.cuda.stream(stream):
-                    hidden_states_direction = self.do_forward(x, param)
+                    hidden_states_direction = self.do_forward(x_ordered, param)
             else:
-                hidden_states_direction = self.do_forward(x, param)
-            # Now that we computed the hidden states we need to put them in the correct order for this direction
-            global_hidden_states[i] = self.reorder_for_direction(
-                    hidden_states_direction, param["indices"],
-                    (batch_size, self.out_channels, height, width))
+                hidden_states_direction = self.do_forward(x_ordered, param)
+            global_hidden_states[i] = hidden_states_direction
         if cuda_available:
             torch.cuda.synchronize()
         # Needs to be transposed because we stacked by direction while we expect the first dimension to be batch
-        return to_best_device(torch.stack(global_hidden_states).transpose(0, 1))
+        stacked = torch.stack(global_hidden_states)
+        return to_best_device(stacked.transpose(0, 1))
 
     def do_forward(self, x, param):
         batch_size, in_channels, height, width = x.shape
-        prev = param["prev"]
         lstm = param["lstm"]
         hidden_states_direction = []
         cell_states_direction = []
         i = 0
-        coordinates = self.to_coordinates(param["indices"])
+        coordinates = self.to_coordinates(self.params[0]["indices"])
         for idx in coordinates:
             y_height, x_width = idx
             # If we're on the first row the previous element is the vector of the good shape with 0s
@@ -196,4 +203,4 @@ class MDLSTM(nn.Module):
             cell_states_direction.append(cs)
             hidden_states_direction.append(hs)
             i += 1
-        return hidden_states_direction
+        return self.fold(torch.stack(hidden_states_direction, dim=2))
