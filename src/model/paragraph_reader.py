@@ -14,8 +14,8 @@ class ParagraphReader(nn.Module):
         self.block1 = MDLSTMConvBlock(height=h, width=w, in_channels=6, out_lstm=10, out_channels=20, kernel=(2, 4))
         h, w = self.get_dim_out(h, w)
         self.block2 = MDLSTMConvBlock(height=h, width=w, in_channels=20, out_lstm=30, out_channels=OUT_CHANNELS_LAST_CNN, kernel=(2, 4))
-        self.lstm = to_best_device(nn.LSTM(input_size=OUT_CHANNELS_LAST_CNN, hidden_size=50, batch_first=True))
-        self.dense = to_best_device(nn.Linear(in_features=50, out_features=len(characters)))
+        self.lstm = nn.LSTM(input_size=OUT_CHANNELS_LAST_CNN, hidden_size=100, batch_first=True)
+        self.dense = nn.Linear(in_features=100, out_features=len(characters))
 
     def forward(self, x):
         batch_size, _, _, _ = x.shape

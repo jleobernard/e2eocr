@@ -64,13 +64,13 @@ ds = get_dataset(data_path, width=WIDTH, height=HEIGHT, target_length=MAX_SENTEN
 #exit()
 print(f"...dataset loaded")
 dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=True)
-model = ParagraphReader(height=HEIGHT, width=WIDTH)
+model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH))
 
 if load_model:
     do_load_model(models_rep, model)
 
 model.train()
-loss = to_best_device(nn.CTCLoss(blank=blank_id, zero_infinity=True, reduction='sum'))
+loss = to_best_device(nn.CTCLoss(blank=blank_id, zero_infinity=True))
 optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
 start = time.time()
 losses =[]
