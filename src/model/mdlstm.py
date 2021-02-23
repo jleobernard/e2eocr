@@ -19,11 +19,11 @@ class MDLSTMCell(nn.Module):
         x_parameters_shape = (in_channels, out_channels * 5)
         h_parameters_shape = (out_channels, out_channels * 5)
         bias_shape = (out_channels * 5)
-        self.w0 = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
-        self.u0 = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
-        self.w1 = nn.parameter.Parameter(to_best_device(torch.empty(x_parameters_shape)))
-        self.u1 = nn.parameter.Parameter(to_best_device(torch.empty(h_parameters_shape)))
-        self.b = nn.parameter.Parameter(to_best_device(torch.empty(bias_shape)))
+        self.w0 = nn.parameter.Parameter(torch.empty(x_parameters_shape))
+        self.u0 = nn.parameter.Parameter(torch.empty(h_parameters_shape))
+        self.w1 = nn.parameter.Parameter(torch.empty(x_parameters_shape))
+        self.u1 = nn.parameter.Parameter(torch.empty(h_parameters_shape))
+        self.b = nn.parameter.Parameter(torch.empty(bias_shape))
 
         # Weights of the weighted sum of the cs calculated for each direction
         #self.weight_sum_1 = nn.parameter.Parameter(to_best_device(torch.rand(1)))
