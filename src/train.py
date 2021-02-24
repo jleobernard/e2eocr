@@ -82,6 +82,8 @@ for epoch in range(NUM_EPOCHS):
         labels = to_best_device(labels)
         optimizer.zero_grad()
         outputs = model(data)
+        # Because outputs is of dimension (batch_size, seq, nb_chars) we have to permute the dimensions to fit cttloss
+        # expected inputs
         outputs = outputs.permute(1, 0, 2)
         bs = len(data)
         curr_loss = loss(outputs.log_softmax(2), labels, bs * [outputs.shape[0]], [get_sentence_length(label) for label in labels])

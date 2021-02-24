@@ -23,8 +23,10 @@ class ParagraphReader(nn.Module):
         x = self.block0(x)
         x = self.block1(x)
         x = self.block2(x) # batch_size, in_channels, height, width = x.shape
-        x = torch.flatten(x, start_dim=2) # batch_size, in_channels, height * width = x.shape
-        x = x.permute(0, 2, 1) # height * width, batch_size, in_channels = x.shape
+        # Compress vertically
+        x = x.sum(3) # batch_size, in_channels, width = x.shape
+        #x = torch.flatten(x, start_dim=2) # batch_size, in_channels, height * width = x.shape
+        x = x.permute(0, 2, 1) # batch_size, height * width, in_channels = x.shape
         x, _ = self.lstm(x)
         x = self.dense(x)
         return x
