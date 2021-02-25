@@ -16,7 +16,7 @@ class ParagraphReader(nn.Module):
         kernel = (3, 3)
         max_pool_kernel = (2, 2)
         for i in range(nb_layers):
-            conv_maps, mdlstm_maps = self.get_feature_maps(i + 1, feature_maps_multiplicity)
+            conv_maps, mdlstm_maps = self.get_feature_maps(i, feature_maps_multiplicity)
             mdlstm_conv_blocks.append(MDLSTMConvBlock(height=h, width=w, in_channels=in_channels,
                                                       out_lstm=mdlstm_maps, out_conv=conv_maps,
                                                       kernel=kernel, max_pool_kernel=max_pool_kernel, dropout=dropout))
@@ -32,7 +32,8 @@ class ParagraphReader(nn.Module):
             # Maybe do something for the linear layer
 
     def get_feature_maps(self, iteration: int, feature_maps_multiplicity: int):
-        conv_maps = 15 if iteration == 1 else feature_maps_multiplicity * (iteration + 2)
+        # +3 and not +2 because it is 0-based
+        conv_maps = 15 if iteration == 0 else feature_maps_multiplicity * (iteration + 3)
         return conv_maps, conv_maps + feature_maps_multiplicity
 
     def forward(self, x):
@@ -40,7 +41,7 @@ class ParagraphReader(nn.Module):
         for block in self.blocks:
             x = block(x)  # batch_size, in_channels, height, width = x.shape
         # Compress vertically
-        x = x.sum(3)  # batch_size, in_channels, width = x.shape
+        x = x.sum(2)  # batch_size, in_channels, width = x.shape
         x = x.permute(0, 2, 1)  # batch_size, width, in_channels = x.shape
         x = self.dense(x)
         return x
