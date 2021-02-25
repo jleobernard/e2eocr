@@ -25,11 +25,6 @@ class MDLSTMCell(nn.Module):
         self.u1 = nn.parameter.Parameter(torch.empty(h_parameters_shape))
         self.b = nn.parameter.Parameter(torch.empty(bias_shape))
 
-        # Weights of the weighted sum of the cs calculated for each direction
-        #self.weight_sum_1 = nn.parameter.Parameter(to_best_device(torch.rand(1)))
-        #self.weight_sum_2 = nn.parameter.Parameter(to_best_device(torch.rand(1)))
-        self.initialize_weights()
-
     def initialize_weights(self):
         torch.nn.init.xavier_uniform_(self.w0)
         torch.nn.init.xavier_uniform_(self.u0)

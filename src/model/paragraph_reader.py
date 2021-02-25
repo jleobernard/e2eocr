@@ -1,47 +1,46 @@
-import math
-import torch
 import torch.nn as nn
 from model.mdlstm_conv_block import MDLSTMConvBlock
 from utils.characters import characters
-from utils.tensor_helper import to_best_device
 
-OUT_CHANNELS_LAST_CNN = 50
+from src.utils.tensor_helper import get_dim_out
+
 
 class ParagraphReader(nn.Module):
-    def __init__(self, height: int, width: int):
+
+    def __init__(self, height: int, width: int, feature_maps_multiplicity: int = 15, nb_layers: int = 3):
         super(ParagraphReader, self).__init__()
-        self.block0 = MDLSTMConvBlock(height=height, width=width, in_channels=1, out_lstm=2, out_channels=6, kernel=(2, 4))
-        h, w = self.get_dim_out(height, width)
-        self.block1 = MDLSTMConvBlock(height=h, width=w, in_channels=6, out_lstm=10, out_channels=20, kernel=(2, 4))
-        h, w = self.get_dim_out(h, w)
-        self.block2 = MDLSTMConvBlock(height=h, width=w, in_channels=20, out_lstm=30, out_channels=OUT_CHANNELS_LAST_CNN, kernel=(2, 4))
-        self.lstm = nn.LSTM(input_size=OUT_CHANNELS_LAST_CNN, hidden_size=100, batch_first=True)
-        self.dense = nn.Linear(in_features=100, out_features=len(characters))
+        mdlstm_conv_blocks = []
+        h, w = height, width
+        in_channels = 1
+        dropout = 0.
+        kernel = (3, 3)
+        max_pool_kernel = (2, 2)
+        for i in range(nb_layers):
+            conv_maps, mdlstm_maps = self.get_feature_maps(i + 1, feature_maps_multiplicity)
+            mdlstm_conv_blocks.append(MDLSTMConvBlock(height=h, width=w, in_channels=in_channels,
+                                                      out_lstm=mdlstm_maps, out_conv=conv_maps,
+                                                      kernel=kernel, max_pool_kernel=max_pool_kernel, dropout=dropout))
+            h, w = get_dim_out(h, w, kernel=kernel, max_pool_kernel=max_pool_kernel)
+            in_channels = mdlstm_maps
+            dropout = 0.25
+        self.blocks = nn.ModuleList(mdlstm_conv_blocks)
+        self.dense = nn.Linear(in_features=mdlstm_maps, out_features=len(characters))
+
+    def initialize_weights(self):
+        for block in self.blocks:
+            block.initialize_weights()
+            # Maybe do something for the linear layer
+
+    def get_feature_maps(self, iteration: int, feature_maps_multiplicity: int):
+        conv_maps = 15 if iteration == 1 else feature_maps_multiplicity * (iteration + 2)
+        return conv_maps, conv_maps + feature_maps_multiplicity
 
     def forward(self, x):
         batch_size, _, _, _ = x.shape
-        x = self.block0(x)
-        x = self.block1(x)
-        x = self.block2(x) # batch_size, in_channels, height, width = x.shape
+        for block in self.blocks:
+            x = block(x)  # batch_size, in_channels, height, width = x.shape
         # Compress vertically
-        x = x.sum(3) # batch_size, in_channels, width = x.shape
-        #x = torch.flatten(x, start_dim=2) # batch_size, in_channels, height * width = x.shape
-        x = x.permute(0, 2, 1) # batch_size, height * width, in_channels = x.shape
-        x, _ = self.lstm(x)
+        x = x.sum(3)  # batch_size, in_channels, width = x.shape
+        x = x.permute(0, 2, 1)  # batch_size, width, in_channels = x.shape
         x = self.dense(x)
         return x
-
-    def get_dim_out(self, height: int, width: int, kernel: (int, int) = (2, 4), stride: int = 2, padding=0, dilatation=1):
-        """
-        Applies the rules described at https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html?highlight=convolution#torch.nn.Conv2d
-        :param height:
-        :param width:
-        :param stride:
-        :param kernel:
-        :param padding:
-        :param dilatation:
-        :return:
-        """
-        hout = math.floor((height + 2 * padding - dilatation * (kernel[0] - 1) - 1) / stride + 1)
-        wout = math.floor((width + 2 * padding - dilatation * (kernel[1] - 1) - 1) / stride + 1)
-        return hout, wout

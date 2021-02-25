@@ -11,16 +11,11 @@ from utils.characters import blank_id, get_sentence_length
 from utils.image_helper import get_dataset
 from utils.tensor_helper import to_best_device, do_load_model
 
-if torch.cuda.is_available():
-    print("CUDA will be used")
-else:
-    print("CUDA won't be used")
-
 parser = argparse.ArgumentParser(description='Train the model.')
 parser.add_argument('--data', dest='data_path',
-                    help='Path to the folder containing training data')
+                    help='Path to the folder containing training data', required=True)
 parser.add_argument('--models', dest='models_path',
-                    help='Path to the folder containing the models (load and save)')
+                    help='Path to the folder containing the models (load and save)', required=True)
 parser.add_argument('--epoch', dest='epoch', default=10,
                     help='Path to the folder containing training data')
 parser.add_argument('--batch', dest='batch', default=10,
@@ -31,7 +26,7 @@ parser.add_argument('--width', dest='width', default=80,
                     help='Width of source images')
 parser.add_argument('--sentence', dest='sentence', default=10,
                     help='Max length of sentences')
-parser.add_argument('--lr', dest='lr', default=10,
+parser.add_argument('--lr', dest='lr', default=0.0001,
                     help='Learning rate')
 parser.add_argument('--load', dest='load', default=False,
                     help='Load model if true')
@@ -48,6 +43,10 @@ MOMENTUM = 0.9
 MAX_SENTENCE_LENGTH = int(args.sentence) # 10
 LEARNING_RATE = float(args.lr) # 0.00001
 
+if torch.cuda.is_available():
+    print("CUDA will be used")
+else:
+    print("CUDA won't be used")
 
 def imshow(inp):
     inp = inp.numpy()[0]
@@ -68,12 +67,14 @@ model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH))
 
 if load_model:
     do_load_model(models_rep, model)
+else:
+    model.initialize_weights()
 
 model.train()
 loss = to_best_device(nn.CTCLoss(blank=blank_id, zero_infinity=True))
 optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
 start = time.time()
-losses =[]
+losses = []
 for epoch in range(NUM_EPOCHS):
     running_loss = 0.0
     for i, batch_data in enumerate(dataloader):
