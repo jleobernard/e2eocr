@@ -159,7 +159,7 @@ class MDLSTM(nn.Module):
                     hidden_states_direction = self.do_forward(x_ordered, lstm)
             else:
                 hidden_states_direction = self.do_forward(x_ordered, lstm)
-            global_hidden_states[i] = hidden_states_direction
+            global_hidden_states[i] = self.flipped_image(hidden_states_direction, direction=i)
         if cuda_available:
             torch.cuda.synchronize()
         # Needs to be transposed because we stacked by direction while we expect the first dimension to be batch
