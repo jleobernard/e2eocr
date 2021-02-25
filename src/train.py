@@ -30,6 +30,8 @@ parser.add_argument('--lr', dest='lr', default=0.0001,
                     help='Learning rate')
 parser.add_argument('--load', dest='load', default=False,
                     help='Load model if true')
+parser.add_argument('--save-freq', dest='save_freq', default=10,
+                    help='Load model if true')
 args = parser.parse_args()
 
 data_path = args.data_path
@@ -42,6 +44,7 @@ WIDTH = int(args.width) # 80
 MOMENTUM = 0.9
 MAX_SENTENCE_LENGTH = int(args.sentence) # 10
 LEARNING_RATE = float(args.lr) # 0.00001
+SAVE_FREQUENCY = args.save_freq
 
 if torch.cuda.is_available():
     print("CUDA will be used")
@@ -71,28 +74,28 @@ else:
     model.initialize_weights()
 
 model.train()
-loss = to_best_device(nn.CTCLoss(blank=blank_id, zero_infinity=True))
+loss = nn.CTCLoss(blank=blank_id, zero_infinity=True)
 optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
 start = time.time()
 losses = []
 for epoch in range(NUM_EPOCHS):
     running_loss = 0.0
     for i, batch_data in enumerate(dataloader):
-        data, labels = batch_data
-        data = to_best_device(data)
-        labels = to_best_device(labels)
+        data_cpu, labels_cpu = batch_data
+        data = to_best_device(data_cpu)
+        labels = to_best_device(labels_cpu)
         optimizer.zero_grad()
         outputs = model(data)
         # Because outputs is of dimension (batch_size, seq, nb_chars) we have to permute the dimensions to fit cttloss
         # expected inputs
         outputs = outputs.permute(1, 0, 2)
         bs = len(data)
-        curr_loss = loss(outputs.log_softmax(2), labels, bs * [outputs.shape[0]], [get_sentence_length(label) for label in labels])
+        curr_loss = loss(outputs.log_softmax(2).cpu(), labels_cpu, torch.tensor(bs * [outputs.shape[0]], dtype=torch.long), torch.tensor([get_sentence_length(label) for label in labels], dtype=torch.long))
         curr_loss.backward()
         optimizer.step()
         running_loss += curr_loss.item()
     print(f'[{epoch}]Loss is {running_loss}')
-    if epoch % 20 == 19:
+    if epoch % SAVE_FREQUENCY == (SAVE_FREQUENCY - 1):
         path_to_epoch_file = f"{models_rep}/{time.time()}-{epoch}.pt"
         print(f'Saving epoch {epoch} in {path_to_epoch_file} with loss {running_loss}')
         torch.save(model.state_dict(), path_to_epoch_file)
