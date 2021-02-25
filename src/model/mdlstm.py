@@ -87,14 +87,11 @@ class MDLSTM(nn.Module):
         self.lstm_rl_bt = MDLSTMCell(in_channels=in_channels, out_channels=out_channels)
         # Indices in the order the lstms need to scan entries
         self.indices_lr_tb = np.arange(start=0, stop=area, step=1)
-        self.indices_rl_tb = np.concatenate([np.arange((x + 1) * width - 1, x * width - 1, step = -1) for x in range(height)])
-        self.indices_lr_bt = np.concatenate([np.arange(x * width, (x + 1) * width, step=1) for x in range(height - 1, -1,  -1)])
-        self.indices_rl_bt = np.arange(start=area - 1, stop=-1, step=-1)
+        #self.indices_rl_tb = np.concatenate([np.arange((x + 1) * width - 1, x * width - 1, step = -1) for x in range(height)])
+        #self.indices_lr_bt = np.concatenate([np.arange(x * width, (x + 1) * width, step=1) for x in range(height - 1, -1,  -1)])
+        #self.indices_rl_bt = np.arange(start=area - 1, stop=-1, step=-1)
 
-        self.params = [{"indices": self.indices_lr_tb, "prev": (-1, -1), "lstm": self.lstm_lr_tb},
-                  {"indices": self.indices_rl_tb, "prev": (-1, 1), "lstm": self.lstm_rl_tb},
-                  {"indices": self.indices_lr_bt, "prev": (1, -1), "lstm": self.lstm_lr_bt},
-                  {"indices": self.indices_rl_bt, "prev": (1, 1), "lstm": self.lstm_rl_bt}]
+        self.params = [self.lstm_lr_tb, self.lstm_rl_tb, self.lstm_lr_bt, self.lstm_rl_bt]
         self.fold = torch.nn.Fold(output_size=(self.height, self.width), kernel_size=(1, 1))
 
     def initialize_weights(self):
@@ -154,14 +151,14 @@ class MDLSTM(nn.Module):
         streams = [torch.cuda.Stream() for _ in self.params] if cuda_available else []
         if cuda_available:
             torch.cuda.synchronize()
-        for i, param in enumerate(self.params):
+        for i, lstm in enumerate(self.params):
             x_ordered = self.flipped_image(x, direction=i)
             if cuda_available:
                 stream = streams[i]
                 with torch.cuda.stream(stream):
-                    hidden_states_direction = self.do_forward(x_ordered, param)
+                    hidden_states_direction = self.do_forward(x_ordered, lstm)
             else:
-                hidden_states_direction = self.do_forward(x_ordered, param)
+                hidden_states_direction = self.do_forward(x_ordered, lstm)
             global_hidden_states[i] = hidden_states_direction
         if cuda_available:
             torch.cuda.synchronize()
@@ -169,39 +166,37 @@ class MDLSTM(nn.Module):
         stacked = torch.stack(global_hidden_states)
         return to_best_device(stacked.transpose(0, 1))
 
-    def do_forward(self, x, param):
+    def do_forward(self, x, lstm):
         batch_size, in_channels, height, width = x.shape
-        lstm = param["lstm"]
         hidden_states_direction = []
         cell_states_direction = []
         i = 0
-        coordinates = self.to_coordinates(self.params[0]["indices"])
-        for idx in coordinates:
-            y_height, x_width = idx
-            # If we're on the first row the previous element is the vector of the good shape with 0s
-            if i - width < 0:
-                prev_0_c = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
-                prev_0_h = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
-            else:
-                # Otherwise we get back the previously computed c and h for this direction and coordinates
-                # So the tensors are of the shape (batch_size, out_channels)
-                idx_to_prev = i - width
-                prev_0_c = cell_states_direction[idx_to_prev]
-                prev_0_h = hidden_states_direction[idx_to_prev]
-            # If we're on the first column the previous element is the vector of the good shape with 0s
-            if i % width == 0:
-                prev_1_c = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
-                prev_1_h = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
-            else:
-                # Otherwise we get back the previously computed c and h for this direction and coordinates
-                # So the tensors are of the shape (batch_size, out_channels)
-                idx_to_prev = i - 1
-                prev_1_c = cell_states_direction[idx_to_prev]
-                prev_1_h = hidden_states_direction[idx_to_prev]
-            # The current input is a tensor of shape (batch_size, input_channels) at coordinates (x,y)
-            current_input = x[:, :, y_height, x_width]
-            cs, hs = lstm.compute(current_input, prev_0_c, prev_0_h, prev_1_c, prev_1_h)
-            cell_states_direction.append(cs)
-            hidden_states_direction.append(hs)
-            i += 1
+        for y_height in range(height):
+            for x_width in range(width):
+                # If we're on the first row the previous element is the vector of the good shape with 0s
+                if y_height == 0:
+                    prev_0_c = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
+                    prev_0_h = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
+                else:
+                    # Otherwise we get back the previously computed c and h for this direction and coordinates
+                    # So the tensors are of the shape (batch_size, out_channels)
+                    idx_to_prev = i - width
+                    prev_0_c = cell_states_direction[idx_to_prev]
+                    prev_0_h = hidden_states_direction[idx_to_prev]
+                # If we're on the first column the previous element is the vector of the good shape with 0s
+                if x_width == 0:
+                    prev_1_c = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
+                    prev_1_h = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
+                else:
+                    # Otherwise we get back the previously computed c and h for this direction and coordinates
+                    # So the tensors are of the shape (batch_size, out_channels)
+                    idx_to_prev = i - 1
+                    prev_1_c = cell_states_direction[idx_to_prev]
+                    prev_1_h = hidden_states_direction[idx_to_prev]
+                # The current input is a tensor of shape (batch_size, input_channels) at coordinates (x,y)
+                current_input = x[:, :, y_height, x_width]
+                cs, hs = lstm.compute(current_input, prev_0_c, prev_0_h, prev_1_c, prev_1_h)
+                cell_states_direction.append(cs)
+                hidden_states_direction.append(hs)
+                i += 1
         return self.fold(torch.stack(hidden_states_direction, dim=2))
