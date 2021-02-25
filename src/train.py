@@ -44,7 +44,7 @@ WIDTH = int(args.width) # 80
 MOMENTUM = 0.9
 MAX_SENTENCE_LENGTH = int(args.sentence) # 10
 LEARNING_RATE = float(args.lr) # 0.00001
-SAVE_FREQUENCY = args.save_freq
+SAVE_FREQUENCY = int(args.save_freq)
 
 if torch.cuda.is_available():
     print("CUDA will be used")
