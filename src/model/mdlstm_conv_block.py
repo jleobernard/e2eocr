@@ -27,7 +27,7 @@ class MDLSTMConvBlock(nn.Module):
         self.mdlstm = MDLSTM(height=h, width=w, in_channels=out_conv, out_channels=out_lstm)
 
     def initialize_weights(self):
-        nn.init.xavier_uniform(self.conv.weight)
+        nn.init.xavier_uniform_(self.conv.weight)
         self.mdlstm.initialize_weights()
         self.norm.weight.data.fill_(1)
 
