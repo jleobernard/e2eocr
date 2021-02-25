@@ -5,7 +5,7 @@ import torch.nn as nn
 from model.mdlstm import MDLSTM
 from utils.tensor_helper import to_best_device
 
-from src.utils.tensor_helper import get_dim_out
+from utils.tensor_helper import get_dim_out
 
 
 class MDLSTMConvBlock(nn.Module):
