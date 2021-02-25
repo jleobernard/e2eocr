@@ -90,7 +90,7 @@ for epoch in range(NUM_EPOCHS):
         # expected inputs
         outputs = outputs.permute(1, 0, 2)
         bs = len(data)
-        curr_loss = loss(outputs.log_softmax(2).cpu(), labels_cpu, torch.tensor(bs * [outputs.shape[0]], dtype=torch.long), torch.tensor([get_sentence_length(label) for label in labels], dtype=torch.long))
+        curr_loss = loss(outputs.log_softmax(2), labels, torch.tensor(bs * [outputs.shape[0]], dtype=torch.long), torch.tensor([get_sentence_length(label) for label in labels], dtype=torch.long))
         curr_loss.backward()
         optimizer.step()
         running_loss += curr_loss.item()
