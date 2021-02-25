@@ -97,6 +97,12 @@ class MDLSTM(nn.Module):
                   {"indices": self.indices_rl_bt, "prev": (1, 1), "lstm": self.lstm_rl_bt}]
         self.fold = torch.nn.Fold(output_size=(self.height, self.width), kernel_size=(1, 1))
 
+    def initialize_weights(self):
+        self.lstm_lr_tb.initialize_weights()
+        self.lstm_rl_tb.initialize_weights()
+        self.lstm_lr_bt.initialize_weights()
+        self.lstm_rl_bt.initialize_weights()
+
     def to_coordinates(self, indices: list):
         return [(self.to_y(idx), self.to_x(idx)) for idx in indices]
 
