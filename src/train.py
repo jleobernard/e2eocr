@@ -62,19 +62,20 @@ def imshow(inp):
 
 print(f"Loading dataset from {data_path}...")
 ds = get_dataset(data_path, width=WIDTH, height=HEIGHT, target_length=MAX_SENTENCE_LENGTH)
-#imshow(ds[8][0])
+#imshow(ds[5][0])
 #exit()
 print(f"...dataset loaded")
 dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=True)
-model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH))
+model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH, nb_layers=3))
 
 if load_model:
-    do_load_model(models_rep, model)
+    if not do_load_model(models_rep, model):
+        model.initialize_weights()
 else:
     model.initialize_weights()
 
 model.train()
-loss = nn.CTCLoss(blank=blank_id, zero_infinity=True)
+loss = to_best_device(nn.CTCLoss(blank=blank_id, zero_infinity=True))
 optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
 start = time.time()
 losses = []
@@ -88,9 +89,11 @@ for epoch in range(NUM_EPOCHS):
         outputs = model(data)
         # Because outputs is of dimension (batch_size, seq, nb_chars) we have to permute the dimensions to fit cttloss
         # expected inputs
-        outputs = outputs.permute(1, 0, 2)
+        outputs = outputs.permute(1, 0, 2) # seq, batch_size, nb_chars = outputs.shape
         bs = len(data)
-        curr_loss = loss(outputs.log_softmax(2), labels, torch.tensor(bs * [outputs.shape[0]], dtype=torch.long), torch.tensor([get_sentence_length(label) for label in labels], dtype=torch.long))
+        curr_loss = loss(nn.functional.log_softmax(outputs, 2), labels.flatten(),
+                         torch.tensor(bs * [outputs.shape[0]], dtype=torch.long),
+                         torch.tensor([len(label) for label in labels], dtype=torch.long))
         curr_loss.backward()
         optimizer.step()
         running_loss += curr_loss.item()

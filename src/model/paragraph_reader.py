@@ -37,11 +37,16 @@ class ParagraphReader(nn.Module):
         return conv_maps, conv_maps + feature_maps_multiplicity
 
     def forward(self, x):
+        """
+
+        :param x: Tensor of shape (batch, channel, height, width)
+        :return: Tensor of shape (batch, sequence, len(characters))
+        """
         batch_size, _, _, _ = x.shape
         for block in self.blocks:
             x = block(x)  # batch_size, in_channels, height, width = x.shape
         # Compress vertically
         x = x.sum(2)  # batch_size, in_channels, width = x.shape
         x = x.permute(0, 2, 1)  # batch_size, width, in_channels = x.shape
-        x = self.dense(x)
+        x = self.dense(x)  # batch_size, width, nb_chars = x.shape
         return x

@@ -15,19 +15,20 @@ def to_best_device(tensor: torch.Tensor) -> Union[torch.Tensor, Module]:
     return tensor
 
 
-def do_load_model(models_rep: str, model: Module, exit_on_error: bool = False):
+def do_load_model(models_rep: str, model: Module, exit_on_error: bool = False) -> bool:
     last_model_file = get_last_model_params(models_rep)
     if not last_model_file:
         print(f"No parameters to load from {models_rep}")
         if exit_on_error:
             exit(-1)
         else:
-            return
+            return False
     print(f"Loading parameters from {last_model_file}")
     if torch.cuda.is_available():
         model.load_state_dict(torch.load(last_model_file))
     else:
         model.load_state_dict(torch.load(last_model_file, map_location=torch.device('cpu')))
+    return True
 
 
 def get_dim_out(height: int, width: int, kernel: (int, int) = (3, 3), max_pool_kernel: (int, int) = (2, 2),

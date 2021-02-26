@@ -27,7 +27,7 @@ print(f"Loading dataset from {data_path}...")
 ds = get_dataset(data_path, width=WIDTH, height=HEIGHT, target_length=MAX_SENTENCE_LENGTH)
 print(f"...dataset loaded")
 dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False)
-model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH))
+model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH, nb_layers=3))
 
 do_load_model(models_rep, model, exit_on_error=True)
 
@@ -48,14 +48,10 @@ def from_target_labels(target: torch.Tensor) -> str:
     final = []
     current_char = None
     for char in all_chars:
-        if not char == current_char:
-            current_char = char
-            if char == blank_character:
-                pass
-            elif char == void_character:
-                final.append(" ")
-            else:
-                final.append(char)
+        if char == void_character:
+            final.append(" ")
+        else:
+            final.append(char)
     return ''.join(final)
 
 

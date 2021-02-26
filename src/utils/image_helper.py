@@ -31,7 +31,8 @@ class TextGenerator:
         pd.DataFrame({'label': labels, 'file': [f'{i}.png' for i, _ in enumerate(labels)]}).to_csv(f"{out_dir}/dataset.csv", index=False)
 
     def __get_label__(self, nb_characters: int) -> str:
-        return ''.join(random.choices(characters.characters[2:], k=nb_characters)) # We remove the first 2 characters
+        return ''.join(random.choices(characters.characters[2:4], k=nb_characters)) # We remove the first 2 characters
+        #return ''.join(random.choices(characters.characters[2:], k=nb_characters)) # We remove the first 2 characters
 
     def __get_start_position__(self, param, nb_lines, nb_characters, dimensions):
         width, height = dimensions
