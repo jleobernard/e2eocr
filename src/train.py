@@ -75,7 +75,7 @@ else:
     model.initialize_weights()
 
 model.train()
-loss = to_best_device(nn.CTCLoss(blank=blank_id, zero_infinity=True))
+loss = to_best_device(nn.CTCLoss(blank=blank_id, zero_infinity=True, reduction='sum'))
 optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
 start = time.time()
 losses = []
