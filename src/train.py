@@ -87,6 +87,7 @@ scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
                                           anneal_strategy='linear')
 start = time.time()
 losses = []
+min_loss = sys.maxsize
 for epoch in range(NUM_EPOCHS):
     running_loss = 0.0
     for i, batch_data in enumerate(dataloader):
@@ -107,10 +108,14 @@ for epoch in range(NUM_EPOCHS):
         scheduler.step()
         running_loss += curr_loss.item()
     print(f'[{epoch}]Loss is {running_loss}')
-    if epoch % SAVE_FREQUENCY == (SAVE_FREQUENCY - 1):
-        path_to_epoch_file = f"{models_rep}/{time.time()}-{epoch}.pt"
-        print(f'Saving epoch {epoch} in {path_to_epoch_file} with loss {running_loss}')
-        torch.save(model.state_dict(), path_to_epoch_file)
+    if running_loss < min_loss:
+        print(f'[{epoch}] Best loss so far is {running_loss} so we will save in best')
+        torch.save(model.state_dict(), f"{models_rep}/best.pt")
+        min_loss = running_loss
+    #if epoch % SAVE_FREQUENCY == (SAVE_FREQUENCY - 1):
+    #    path_to_epoch_file = f"{models_rep}/{time.time()}-{epoch}.pt"
+    #    print(f'Saving epoch {epoch} in {path_to_epoch_file} with loss {running_loss}')
+    #    torch.save(model.state_dict(), path_to_epoch_file)
     losses.append(running_loss)
 end = time.time()
 print(f"It took {end - start}")
