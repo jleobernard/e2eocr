@@ -32,8 +32,6 @@ parser.add_argument('--max-lr', dest='max_lr', default=0.1,
                     help='Max learning rate')
 parser.add_argument('--load', dest='load', default=False,
                     help='Load model if true')
-parser.add_argument('--save-freq', dest='save_freq', default=10,
-                    help='Load model if true')
 args = parser.parse_args()
 
 data_path = args.data_path
@@ -47,7 +45,6 @@ MOMENTUM = 0.9
 MAX_SENTENCE_LENGTH = int(args.sentence)
 LEARNING_RATE = float(args.lr)
 MAX_LR = float(args.max_lr)
-SAVE_FREQUENCY = int(args.save_freq)
 
 if torch.cuda.is_available():
     print("CUDA will be used")
@@ -112,10 +109,6 @@ for epoch in range(NUM_EPOCHS):
         print(f'[{epoch}] Best loss so far is {running_loss} so we will save in best')
         torch.save(model.state_dict(), f"{models_rep}/best.pt")
         min_loss = running_loss
-    #if epoch % SAVE_FREQUENCY == (SAVE_FREQUENCY - 1):
-    #    path_to_epoch_file = f"{models_rep}/{time.time()}-{epoch}.pt"
-    #    print(f'Saving epoch {epoch} in {path_to_epoch_file} with loss {running_loss}')
-    #    torch.save(model.state_dict(), path_to_epoch_file)
     losses.append(running_loss)
 end = time.time()
 print(f"It took {end - start}")

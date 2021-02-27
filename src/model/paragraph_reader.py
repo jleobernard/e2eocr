@@ -17,6 +17,8 @@ class ParagraphReader(nn.Module):
         max_pool_kernel = (2, 2)
         for i in range(nb_layers):
             conv_maps, mdlstm_maps = self.get_feature_maps(i, feature_maps_multiplicity)
+            if i == nb_layers - 1:
+                mdlstm_maps = len(characters)
             mdlstm_conv_blocks.append(MDLSTMConvBlock(height=h, width=w, in_channels=in_channels,
                                                       out_lstm=mdlstm_maps, out_conv=conv_maps,
                                                       kernel=kernel, max_pool_kernel=max_pool_kernel, dropout=dropout))
@@ -24,7 +26,7 @@ class ParagraphReader(nn.Module):
             in_channels = mdlstm_maps
             dropout = 0.25
         self.blocks = nn.ModuleList(mdlstm_conv_blocks)
-        self.dense = nn.Linear(in_features=mdlstm_maps, out_features=len(characters))
+        #self.dense = nn.Linear(in_features=mdlstm_maps, out_features=len(characters))
 
     def initialize_weights(self):
         for block in self.blocks:
@@ -48,5 +50,5 @@ class ParagraphReader(nn.Module):
         # Compress vertically
         x = x.sum(2)  # batch_size, in_channels, width = x.shape
         x = x.permute(0, 2, 1)  # batch_size, width, in_channels = x.shape
-        x = self.dense(x)  # batch_size, width, nb_chars = x.shape
+        #x = self.dense(x)  # batch_size, width, nb_chars = x.shape
         return x
