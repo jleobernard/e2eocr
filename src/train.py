@@ -28,6 +28,8 @@ parser.add_argument('--sentence', dest='sentence', default=10,
                     help='Max length of sentences')
 parser.add_argument('--lr', dest='lr', default=0.0001,
                     help='Learning rate')
+parser.add_argument('--max-lr', dest='max_lr', default=0.1,
+                    help='Max learning rate')
 parser.add_argument('--load', dest='load', default=False,
                     help='Load model if true')
 parser.add_argument('--save-freq', dest='save_freq', default=10,
@@ -40,10 +42,11 @@ load_model = 'True' == args.load
 NUM_EPOCHS = int(args.epoch)
 BATCH_SIZE = int(args.batch)
 HEIGHT = int(args.height)
-WIDTH = int(args.width) # 80
+WIDTH = int(args.width)
 MOMENTUM = 0.9
-MAX_SENTENCE_LENGTH = int(args.sentence) # 10
-LEARNING_RATE = float(args.lr) # 0.00001
+MAX_SENTENCE_LENGTH = int(args.sentence)
+LEARNING_RATE = float(args.lr)
+MAX_LR = float(args.max_lr)
 SAVE_FREQUENCY = int(args.save_freq)
 
 if torch.cuda.is_available():
@@ -76,7 +79,12 @@ else:
 
 model.train()
 loss = to_best_device(nn.CTCLoss(blank=blank_id, zero_infinity=True))
-optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
+optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
+                                          max_lr=MAX_LR,
+                                          steps_per_epoch=int(len(dataloader)),
+                                          epochs=NUM_EPOCHS,
+                                          anneal_strategy='linear')
 start = time.time()
 losses = []
 for epoch in range(NUM_EPOCHS):
@@ -96,6 +104,7 @@ for epoch in range(NUM_EPOCHS):
                          torch.tensor([len(label) for label in labels], dtype=torch.long))
         curr_loss.backward()
         optimizer.step()
+        scheduler.step()
         running_loss += curr_loss.item()
     print(f'[{epoch}]Loss is {running_loss}')
     if epoch % SAVE_FREQUENCY == (SAVE_FREQUENCY - 1):
