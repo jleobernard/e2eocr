@@ -86,8 +86,8 @@ class MDLSTM(nn.Module):
         #self.indices_lr_bt = np.concatenate([np.arange(x * width, (x + 1) * width, step=1) for x in range(height - 1, -1,  -1)])
         #self.indices_rl_bt = np.arange(start=area - 1, stop=-1, step=-1)
 
-        #self.params = [self.lstm_lr_tb, self.lstm_rl_tb, self.lstm_lr_bt, self.lstm_rl_bt]
-        self.params = [self.lstm_lr_tb]
+        self.params = [self.lstm_lr_tb, self.lstm_rl_tb, self.lstm_lr_bt, self.lstm_rl_bt]
+        #self.params = [self.lstm_lr_tb]
         self.fold = torch.nn.Fold(output_size=(self.height, self.width), kernel_size=(1, 1))
 
     def initialize_weights(self):

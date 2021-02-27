@@ -39,6 +39,6 @@ class MDLSTMConvBlock(nn.Module):
         x = self.max_pool(x)
         x = torch.tanh(x)
         x = self.mdlstm(x)
-        #x = (x[:, 0, :, :, :] + x[:, 1, :, :, :] + x[:, 2, :, :, :] + x[:, 3, :, :, :]) / 4
-        #return x
-        return x[:, 0, :, :, :]
+        x = (x[:, 0, :, :, :] + x[:, 1, :, :, :] + x[:, 2, :, :, :] + x[:, 3, :, :, :]) / 4
+        return x
+        #return x[:, 0, :, :, :]
