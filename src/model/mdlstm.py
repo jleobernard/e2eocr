@@ -80,14 +80,7 @@ class MDLSTM(nn.Module):
         self.lstm_rl_tb = MDLSTMCell(in_channels=in_channels, out_channels=out_channels)
         self.lstm_lr_bt = MDLSTMCell(in_channels=in_channels, out_channels=out_channels)
         self.lstm_rl_bt = MDLSTMCell(in_channels=in_channels, out_channels=out_channels)
-        # Indices in the order the lstms need to scan entries
-        self.indices_lr_tb = np.arange(start=0, stop=area, step=1)
-        #self.indices_rl_tb = np.concatenate([np.arange((x + 1) * width - 1, x * width - 1, step = -1) for x in range(height)])
-        #self.indices_lr_bt = np.concatenate([np.arange(x * width, (x + 1) * width, step=1) for x in range(height - 1, -1,  -1)])
-        #self.indices_rl_bt = np.arange(start=area - 1, stop=-1, step=-1)
-
         self.params = [self.lstm_lr_tb, self.lstm_rl_tb, self.lstm_lr_bt, self.lstm_rl_bt]
-        #self.params = [self.lstm_lr_tb]
         self.fold = torch.nn.Fold(output_size=(self.height, self.width), kernel_size=(1, 1))
 
     def initialize_weights(self):
@@ -95,36 +88,6 @@ class MDLSTM(nn.Module):
         self.lstm_rl_tb.initialize_weights()
         self.lstm_lr_bt.initialize_weights()
         self.lstm_rl_bt.initialize_weights()
-
-    def to_coordinates(self, indices: list):
-        return [(self.to_y(idx), self.to_x(idx)) for idx in indices]
-
-    def to_y(self, idx):
-        return idx // self.width
-
-    def to_x(self, idx):
-        return idx % self.width
-
-    def is_dim_0_out(self, y: int, delta: int):
-        return y <= 0 if delta < 0 else y >= self.height - 1
-
-    def is_dim_1_out(self, x: int, delta: int):
-        return x <= 0 if delta < 0 else x >= self.width - 1
-
-    def reorder_for_direction(self, tensor_list: List[torch.Tensor], direction: List[int], desired_shape: tuple) -> torch.Tensor:
-        """
-        Reorder computed hidden states of the tensor list so it matches the left->right/top->bottom order
-
-        :param tensor_list: List of tensors, each containing the hidden state/cell state of a pixel
-        :param direction: list of index swaps
-        :param desired_shape: The shape of the output
-        :return: A tensor with the desired shape
-        """
-        tensor = to_best_device(torch.stack(tensor_list))
-        tensor = torch.index_select(tensor, 0, to_best_device(torch.tensor(direction)))
-        tensor = tensor.permute(1, 2, 0)
-        result = tensor.reshape(desired_shape)
-        return result
 
     def flipped_image(self, x: torch.Tensor, direction: int):
         if direction == 0: # LRTP
@@ -142,7 +105,6 @@ class MDLSTM(nn.Module):
         :return: Tensor of size (batch_size, 4, out_channels, height, width)
         """
         # For each direction we're going to compute hidden_states and their activations
-        # Side note : This could be processed in parallel
         global_hidden_states = len(self.params) * [None]
         streams = [torch.cuda.Stream() for _ in self.params] if cuda_available else []
         if cuda_available:
@@ -158,9 +120,9 @@ class MDLSTM(nn.Module):
             global_hidden_states[i] = self.flipped_image(hidden_states_direction, direction=i)
         if cuda_available:
             torch.cuda.synchronize()
+        # Each element in global_hidden_states is of shape (batch, channel, height, width)
         # Needs to be transposed because we stacked by direction while we expect the first dimension to be batch
-        stacked = torch.stack(global_hidden_states)
-        return to_best_device(stacked.transpose(0, 1))
+        return torch.stack(global_hidden_states, dim=1) # (batch, 4, channel, height, width) = stacked.shape
 
     def do_forward(self, x, lstm):
         batch_size, in_channels, height, width = x.shape

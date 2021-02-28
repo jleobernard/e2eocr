@@ -115,9 +115,11 @@ def initialize_my_weights(cell: MDLSTMCell, direction: int):
 torch.manual_seed(0)
 
 NB_IMAGES = 10
-images = torch.rand(NB_IMAGES, 2, 5, 4)
+HEIGHT = 5
+WIDTH = 4
+images = torch.rand(NB_IMAGES, 2, HEIGHT, WIDTH)
 
-mdlstm_test = MDLSTM(height=5, width=4, in_channels=2, out_channels=3)
+mdlstm_test = MDLSTM(height=HEIGHT, width=WIDTH, in_channels=2, out_channels=3)
 start = time.time()
 computed = mdlstm_test.forward(images)
 end = time.time()
