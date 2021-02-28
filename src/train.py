@@ -66,7 +66,9 @@ ds = get_dataset(data_path, width=WIDTH, height=HEIGHT, target_length=MAX_SENTEN
 #exit()
 print(f"...dataset loaded")
 dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=True)
-model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH, nb_layers=3))
+model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH, nb_layers=3, feature_maps_multiplicity=30))
+best_model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH, nb_layers=3, feature_maps_multiplicity=30))
+
 
 if load_model:
     if not do_load_model(models_rep, model):
@@ -85,6 +87,7 @@ scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
 start = time.time()
 losses = []
 min_loss = sys.maxsize
+do_save = True
 for epoch in range(NUM_EPOCHS):
     running_loss = 0.0
     for i, batch_data in enumerate(dataloader):
@@ -105,16 +108,20 @@ for epoch in range(NUM_EPOCHS):
         scheduler.step()
         running_loss += curr_loss.item()
     print(f'[{epoch}]Loss is {running_loss}')
-    if running_loss < min_loss:
-        print(f'[{epoch}] Best loss so far is {running_loss} so we will save in best')
-        torch.save(model.state_dict(), f"{models_rep}/best.pt")
-        min_loss = running_loss
     losses.append(running_loss)
+    if running_loss < min_loss:
+        do_save = True
+        best_model.load_state_dict(model.state_dict())
+        min_loss = running_loss
+    else:
+        if do_save:
+            print(f'[{epoch}] Best loss so far is {min_loss} so we will save in best')
+            torch.save(best_model.state_dict(), f"{models_rep}/best.pt")
+        do_save = False
 end = time.time()
 print(f"It took {end - start}")
-save_path = f"{models_rep}/{time.time()}-final.pt"
-print(f"Saving to {save_path}")
-torch.save(model.state_dict(), save_path)
-print("Done")
+if do_save:
+    print(f'[END] Best loss was {min_loss} so we will save in best')
+    torch.save(best_model.state_dict(), f"{models_rep}/best.pt")
 plt.plot(losses)
 plt.show()

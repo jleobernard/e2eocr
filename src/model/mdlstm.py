@@ -32,7 +32,7 @@ class MDLSTMCell(nn.Module):
         torch.nn.init.xavier_uniform_(self.u1)
         #torch.nn.init.uniform_(self.b)
 
-    def compute(self, x, c_prev_dim0, h_prev_dim0, c_prev_dim1, h_prev_dim1):
+    def forward(self, x, c_prev_dim0, h_prev_dim0, c_prev_dim1, h_prev_dim1):
         """
         - For each output channel apply the same weights to each input channel
         - Sum the results
@@ -128,9 +128,10 @@ class MDLSTM(nn.Module):
         batch_size, in_channels, height, width = x.shape
         hidden_states_direction = []
         cell_states_direction = []
-        i = 0
+        i = -1
         for y_height in range(height):
             for x_width in range(width):
+                i += 1
                 # If we're on the first row the previous element is the vector of the good shape with 0s
                 if y_height == 0:
                     prev_0_c = torch.zeros((batch_size, self.out_channels), requires_grad=False).to(device=x.device)
@@ -153,8 +154,8 @@ class MDLSTM(nn.Module):
                     prev_1_h = hidden_states_direction[idx_to_prev]
                 # The current input is a tensor of shape (batch_size, input_channels) at coordinates (x,y)
                 current_input = x[:, :, y_height, x_width]
-                cs, hs = lstm.compute(current_input, prev_0_c, prev_0_h, prev_1_c, prev_1_h)
+                cs, hs = lstm(current_input, prev_0_c, prev_0_h, prev_1_c, prev_1_h)
                 cell_states_direction.append(cs)
                 hidden_states_direction.append(hs)
-                i += 1
+        # Check the next line
         return self.fold(torch.stack(hidden_states_direction, dim=2))
