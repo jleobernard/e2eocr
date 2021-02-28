@@ -32,6 +32,8 @@ parser.add_argument('--max-lr', dest='max_lr', default=0.1,
                     help='Max learning rate')
 parser.add_argument('--load', dest='load', default=False,
                     help='Load model if true')
+parser.add_argument('--feat-mul', dest='feat_mul', default=15,
+                    help='Load model if true')
 args = parser.parse_args()
 
 data_path = args.data_path
@@ -45,6 +47,7 @@ MOMENTUM = 0.9
 MAX_SENTENCE_LENGTH = int(args.sentence)
 LEARNING_RATE = float(args.lr)
 MAX_LR = float(args.max_lr)
+features_multiplicity = int(args.feat_mul)
 
 if torch.cuda.is_available():
     print("CUDA will be used")
@@ -66,8 +69,8 @@ ds = get_dataset(data_path, width=WIDTH, height=HEIGHT, target_length=MAX_SENTEN
 #exit()
 print(f"...dataset loaded")
 dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=True)
-model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH, nb_layers=3, feature_maps_multiplicity=30))
-best_model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH, nb_layers=3, feature_maps_multiplicity=30))
+model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH, nb_layers=3, feature_maps_multiplicity=features_multiplicity))
+best_model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH, nb_layers=3, feature_maps_multiplicity=features_multiplicity))
 
 
 if load_model:
