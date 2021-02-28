@@ -17,7 +17,7 @@ else:
 data_path = sys.argv[1] # '/data/train/one-line'
 models_rep = sys.argv[2] # '/data/models'
 
-BATCH_SIZE = 5
+BATCH_SIZE = 100
 HEIGHT = 80
 WIDTH = 80
 MAX_SENTENCE_LENGTH = int(sys.argv[3])
