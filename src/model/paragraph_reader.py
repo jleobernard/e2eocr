@@ -4,6 +4,7 @@ from utils.characters import characters
 
 from utils.tensor_helper import get_dim_out
 
+MAX_HIDDEN_UNITES = 120
 
 class ParagraphReader(nn.Module):
 
@@ -31,12 +32,10 @@ class ParagraphReader(nn.Module):
     def initialize_weights(self):
         for block in self.blocks:
             block.initialize_weights()
-            # Maybe do something for the linear layer
 
     def get_feature_maps(self, iteration: int, feature_maps_multiplicity: int):
-        # +3 and not +2 because it is 0-based
-        conv_maps = 15 if iteration == 0 else feature_maps_multiplicity * (iteration + 3)
-        return conv_maps, conv_maps + feature_maps_multiplicity
+        conv_maps = 15 if iteration == 0 else feature_maps_multiplicity * (2 * iteration + 1)
+        return min(MAX_HIDDEN_UNITES, conv_maps), min(MAX_HIDDEN_UNITES, conv_maps + feature_maps_multiplicity)
 
     def forward(self, x):
         """

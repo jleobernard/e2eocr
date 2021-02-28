@@ -36,7 +36,7 @@ class TextGenerator:
 
     def __get_start_position__(self, param, nb_lines, nb_characters, dimensions):
         width, height = dimensions
-        return random.randint(10, width / 2 - 10), random.randint(10, height - 10)
+        return random.randint(0, 3 * width / 4 - 10), random.randint(0, height - 10)
 
 
 class MyPad(torch.nn.Module):

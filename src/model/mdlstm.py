@@ -23,14 +23,14 @@ class MDLSTMCell(nn.Module):
         self.u0 = nn.parameter.Parameter(torch.empty(h_parameters_shape))
         self.w1 = nn.parameter.Parameter(torch.empty(x_parameters_shape))
         self.u1 = nn.parameter.Parameter(torch.empty(h_parameters_shape))
-        self.b = nn.parameter.Parameter(torch.empty(bias_shape))
+        self.b = nn.parameter.Parameter(torch.zeros(bias_shape))
 
     def initialize_weights(self):
         torch.nn.init.xavier_uniform_(self.w0)
         torch.nn.init.xavier_uniform_(self.u0)
         torch.nn.init.xavier_uniform_(self.w1)
         torch.nn.init.xavier_uniform_(self.u1)
-        torch.nn.init.uniform_(self.b)
+        #torch.nn.init.uniform_(self.b)
 
     def compute(self, x, c_prev_dim0, h_prev_dim0, c_prev_dim1, h_prev_dim1):
         """
