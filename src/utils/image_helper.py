@@ -52,6 +52,23 @@ class MyPad(torch.nn.Module):
         padding = (hp, vp, self.width - w - hp, self.height - h - vp)
         return F.pad(image, padding, 255, 'constant')
 
+class CustomDataSetSimple(Dataset):
+    def __init__(self, nb_digit, nb_samples):
+        self.samples = []
+        self.labels = []
+        for i in range(nb_samples):
+            selected_digits = random.choices(range(10), k=nb_digit)
+            self.labels.append(torch.tensor(selected_digits, dtype=torch.long))
+            tensor_digits = [torch.tensor((dig * [1] + 10 * [0])[:10], dtype=torch.float) for dig in selected_digits]
+            sample = torch.stack(tensor_digits).transpose(0, 1).unsqueeze(dim=0)
+            self.samples.append(sample)
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        return self.samples[idx], self.labels[idx]
+
 
 class CustomDataSet(Dataset):
     def __init__(self, root_dir, transform, target_length):
@@ -88,3 +105,4 @@ def get_dataset(path, width=50, height=50, target_length=100):
                                     transforms.Grayscale(),
                                     transforms.ToTensor()])
     return CustomDataSet(root_dir=path, transform=transform, target_length=target_length)
+
