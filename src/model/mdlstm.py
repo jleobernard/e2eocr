@@ -3,7 +3,16 @@ import torch.nn as nn
 import numpy as np
 from typing import List
 
+import matplotlib.pyplot as plt
 from utils.tensor_helper import to_best_device, cuda_available
+
+def imshow(inp):
+    inp = inp.numpy()[0]
+    mean = 0.1307
+    std = 0.3081
+    inp = ((mean * inp) + std)
+    plt.imshow(inp, cmap='gray')
+    plt.show()
 
 """
 https://link.springer.com/chapter/10.1007%2F978-3-540-74690-4_56
@@ -19,18 +28,15 @@ class MDLSTMCell(nn.Module):
         x_parameters_shape = (in_channels, out_channels * 5)
         h_parameters_shape = (out_channels, out_channels * 5)
         bias_shape = (out_channels * 5)
-        self.w0 = nn.parameter.Parameter(torch.empty(x_parameters_shape))
+        self.w = nn.parameter.Parameter(torch.empty(x_parameters_shape))
         self.u0 = nn.parameter.Parameter(torch.empty(h_parameters_shape))
-        self.w1 = nn.parameter.Parameter(torch.empty(x_parameters_shape))
         self.u1 = nn.parameter.Parameter(torch.empty(h_parameters_shape))
         self.b = nn.parameter.Parameter(torch.zeros(bias_shape))
 
     def initialize_weights(self):
-        torch.nn.init.xavier_uniform_(self.w0)
+        torch.nn.init.xavier_uniform_(self.w)
         torch.nn.init.xavier_uniform_(self.u0)
-        torch.nn.init.xavier_uniform_(self.w1)
         torch.nn.init.xavier_uniform_(self.u1)
-        #torch.nn.init.uniform_(self.b)
 
     def forward(self, x, c_prev_dim0, h_prev_dim0, c_prev_dim1, h_prev_dim1):
         """
@@ -55,17 +61,17 @@ class MDLSTMCell(nn.Module):
         and
         https://link.springer.com/chapter/10.1007%2F978-3-540-74690-4_56
         """
-        gates_0 = x @ self.w0 + h_prev_dim0 @ self.u0 + h_prev_dim1 @ self.u1 + self.b
-        oc = self.out_channels
-        it_0 = torch.sigmoid(gates_0[: , :oc])
-        ft_0 = torch.sigmoid(gates_0[: , oc:oc*2])
-        gt_0 = torch.tanh(gates_0[: , oc*2:oc*3])
-        ot_0 = torch.sigmoid(gates_0[: , oc*3:oc*4])
-        lt_0 = torch.sigmoid(gates_0[: , oc*4:]) # The lambda gte
-        ct0 = ft_0 * ((lt_0 * c_prev_dim0) + ((1 - lt_0) * c_prev_dim1)) + it_0 * gt_0
-        ht0 = ot_0 * torch.tanh(ct0)
+        gates = x @ self.w + h_prev_dim0 @ self.u0 + h_prev_dim1 @ self.u1 + self.b
+        it, ft, gt, ot, lt = gates.chunk(5, 1)
+        it = torch.sigmoid(it)
+        ft = torch.sigmoid(ft)
+        gt = torch.tanh(gt)
+        ot = torch.sigmoid(ot)
+        lt = torch.sigmoid(lt)
+        ct = ft * ((lt * c_prev_dim0) + ((1 - lt) * c_prev_dim1)) + it * gt
+        ht = ot * torch.tanh(ct)
 
-        return ct0, ht0
+        return ct, ht
 
 
 class MDLSTM(nn.Module):
@@ -74,7 +80,6 @@ class MDLSTM(nn.Module):
         self.out_channels = out_channels
         self.width = width
         self.height = height
-        area = width * height
         # One LSTM per direction
         self.lstm_lr_tb = MDLSTMCell(in_channels=in_channels, out_channels=out_channels)
         self.lstm_rl_tb = MDLSTMCell(in_channels=in_channels, out_channels=out_channels)
@@ -111,6 +116,7 @@ class MDLSTM(nn.Module):
             torch.cuda.synchronize()
         for i, lstm in enumerate(self.params):
             x_ordered = self.flipped_image(x, direction=i)
+            #imshow(x_ordered[0])
             if cuda_available:
                 stream = streams[i]
                 with torch.cuda.stream(stream):
@@ -157,5 +163,4 @@ class MDLSTM(nn.Module):
                 cs, hs = lstm(current_input, prev_0_c, prev_0_h, prev_1_c, prev_1_h)
                 cell_states_direction.append(cs)
                 hidden_states_direction.append(hs)
-        # Check the next line
         return self.fold(torch.stack(hidden_states_direction, dim=2))

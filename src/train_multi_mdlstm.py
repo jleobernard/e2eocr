@@ -1,14 +1,17 @@
+import argparse
+
 import matplotlib.pyplot as plt
 import sys
 import time
 import torch
-import argparse
-from torch import nn
+import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from model.paragraph_reader import ParagraphReader
-from utils.characters import blank_id, get_sentence_length
-from utils.image_helper import get_dataset
+from model.multi_mdlstm import MultiMdlstm
+from model.my_lstm import CustomLSTM
+from model.simple_mdlstm import SimpleModelMDLSTM
+from model.simple_model import SimpleModel
+from utils.image_helper import CustomDataSetSimple
 from utils.tensor_helper import to_best_device, do_load_model
 
 parser = argparse.ArgumentParser(description='Train the model.')
@@ -41,8 +44,6 @@ models_rep = args.models_path
 load_model = 'True' == args.load
 NUM_EPOCHS = int(args.epoch)
 BATCH_SIZE = int(args.batch)
-HEIGHT = int(args.height)
-WIDTH = int(args.width)
 MOMENTUM = 0.9
 MAX_SENTENCE_LENGTH = int(args.sentence)
 LEARNING_RATE = float(args.lr)
@@ -62,15 +63,14 @@ def imshow(inp):
     plt.imshow(inp, cmap='gray')
     plt.show()
 
-
-print(f"Loading dataset from {data_path}...")
-ds = get_dataset(data_path, width=WIDTH, height=HEIGHT, target_length=MAX_SENTENCE_LENGTH)
+print(f"Loading dataset ...")
+ds = CustomDataSetSimple(nb_digit=MAX_SENTENCE_LENGTH, nb_samples=1000)
 #imshow(ds[5][0])
 #exit()
 print(f"...dataset loaded")
 dataloader = DataLoader(ds, batch_size=int(len(ds) / 3), shuffle=True)
-model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH, nb_layers=3, feature_maps_multiplicity=features_multiplicity))
-best_model = to_best_device(ParagraphReader(height=HEIGHT, width=WIDTH, nb_layers=3, feature_maps_multiplicity=features_multiplicity))
+model = to_best_device(MultiMdlstm(height=10, width=MAX_SENTENCE_LENGTH, nb_classes=11))
+best_model = to_best_device(MultiMdlstm(height=10, width=MAX_SENTENCE_LENGTH, nb_classes=11))
 
 
 if load_model:
@@ -80,7 +80,7 @@ else:
     model.initialize_weights()
 
 model.train()
-loss = to_best_device(nn.CTCLoss(blank=blank_id, zero_infinity=True, reduction="sum"))
+loss = to_best_device(nn.CTCLoss(blank=10, zero_infinity=True, reduction="sum"))
 optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
                                           max_lr=MAX_LR,
@@ -99,9 +99,9 @@ for epoch in range(NUM_EPOCHS):
         labels = to_best_device(labels_cpu)
         optimizer.zero_grad()
         outputs = model(data)
-        # Because outputs is of dimension (batch_size, seq, nb_chars) we have to permute the dimensions to fit cttloss
+        # Because outputs is of dimension (batch_size, nb_chars, seq) we have to permute the dimensions to fit cttloss
         # expected inputs
-        outputs = outputs.permute(1, 0, 2) # seq, batch_size, nb_chars = outputs.shape
+        outputs = outputs.permute(2, 0, 1) # seq, batch_size, nb_chars = outputs.shape
         bs = len(data)
         curr_loss = loss(nn.functional.log_softmax(outputs, 2), labels.flatten(),
                          torch.tensor(bs * [outputs.shape[0]], dtype=torch.long),

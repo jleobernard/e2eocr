@@ -1,11 +1,14 @@
 from torch import nn
 
+from model.my_lstm import CustomLSTM
+
 
 class SimpleModel(nn.Module):
 
     def __init__(self):
         super(SimpleModel, self).__init__()
-        self.lstm = nn.LSTM(input_size=1, hidden_size=11, num_layers=5, bidirectional=True, batch_first=True)
+        self.lstm = CustomLSTM(input_sz=1, hidden_sz=11)
+        self.lstm2 = CustomLSTM(input_sz=11, hidden_sz=11)
 
     def forward(self, x):
         """
@@ -16,11 +19,9 @@ class SimpleModel(nn.Module):
         x = x.sum(2)
         x = x.permute(0, 2, 1)
         x, _ = self.lstm(x)
+        x, _ = self.lstm2(x)
         return x
 
     def initialize_weights(self):
-        for name, param in self.lstm.named_parameters():
-            if 'bias' in name:
-                nn.init.constant_(param, 0.0)
-            elif 'weight' in name:
-                nn.init.xavier_normal_(param)
+        self.lstm.init_weights()
+        self.lstm2.init_weights()

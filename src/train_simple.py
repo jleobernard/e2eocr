@@ -7,6 +7,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+from model.my_lstm import CustomLSTM
+from model.simple_mdlstm import SimpleModelMDLSTM
 from model.simple_model import SimpleModel
 from utils.image_helper import CustomDataSetSimple
 from utils.tensor_helper import to_best_device, do_load_model
@@ -41,8 +43,6 @@ models_rep = args.models_path
 load_model = 'True' == args.load
 NUM_EPOCHS = int(args.epoch)
 BATCH_SIZE = int(args.batch)
-HEIGHT = int(args.height)
-WIDTH = int(args.width)
 MOMENTUM = 0.9
 MAX_SENTENCE_LENGTH = int(args.sentence)
 LEARNING_RATE = float(args.lr)
@@ -62,10 +62,8 @@ def imshow(inp):
     plt.imshow(inp, cmap='gray')
     plt.show()
 
-
-
 print(f"Loading dataset ...")
-ds = CustomDataSetSimple(nb_digit=5, nb_samples=100)
+ds = CustomDataSetSimple(nb_digit=MAX_SENTENCE_LENGTH, nb_samples=1000)
 #imshow(ds[5][0])
 #exit()
 print(f"...dataset loaded")
@@ -81,7 +79,7 @@ else:
     model.initialize_weights()
 
 model.train()
-loss = to_best_device(nn.CTCLoss(blank=10, zero_infinity=True))
+loss = to_best_device(nn.CTCLoss(blank=10, zero_infinity=True, reduction="sum"))
 optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
                                           max_lr=MAX_LR,

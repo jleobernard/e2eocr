@@ -36,7 +36,7 @@ class TextGenerator:
 
     def __get_start_position__(self, param, nb_lines, nb_characters, dimensions):
         width, height = dimensions
-        return random.randint(0, 3 * width / 4 - 10), random.randint(0, height - 10)
+        return random.randint(0, width / 2 - 10), random.randint(0, height - 10)
 
 
 class MyPad(torch.nn.Module):
@@ -51,6 +51,7 @@ class MyPad(torch.nn.Module):
         vp = int((self.height - h) / 2)
         padding = (hp, vp, self.width - w - hp, self.height - h - vp)
         return F.pad(image, padding, 255, 'constant')
+
 
 class CustomDataSetSimple(Dataset):
     def __init__(self, nb_digit, nb_samples):
