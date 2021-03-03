@@ -10,14 +10,15 @@ class CRNN(nn.Module):
     def __init__(self):
         super(CRNN, self).__init__()
         cnns = []
-        self.norms = []
+        norms = []
         in_channels = 1
         for i in range(3):
             out_channels = (i + 1) * 32
             cnns.append(nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(2, 2)))
             in_channels = out_channels
-            self.norms.append(nn.BatchNorm2d(out_channels, affine=False))
+            norms.append(nn.BatchNorm2d(out_channels, affine=False))
         self.cnns = nn.ModuleList(cnns)
+        self.norms = nn.ModuleList(norms)
         self.lstm = nn.LSTM(batch_first=True, bidirectional=True, num_layers=5, input_size=out_channels, hidden_size=len(characters))
         self.max_pool = nn.MaxPool2d(kernel_size=2)
 
