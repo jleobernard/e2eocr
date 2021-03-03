@@ -8,9 +8,9 @@ def split(word: str) -> list:
 
 blank_character = '<BLANK>'
 void_character = '<NOTHING>'
-characters = [blank_character, void_character, 'a', 'b']
+#characters = [blank_character, void_character, 'a', 'b']
+characters = [blank_character, void_character] + split(string.ascii_letters) + split(string.digits) + [" ", ",", '"', "'"]
 nb_characters = len(characters)
-#characters = [blank_character, void_character] + split(string.ascii_letters) + split(string.digits) + [" ", ",", '"', "'"]
 
 blank_id = characters.index(blank_character)
 nothing_id = characters.index(void_character)
