@@ -9,23 +9,23 @@ class CRNN(nn.Module):
 
     def __init__(self):
         super(CRNN, self).__init__()
-        cnns = []
-        norms = []
-        in_channels = 1
-        for i in range(3):
-            out_channels = (i + 1) * 32
-            cnns.append(nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(2, 2)))
-            in_channels = out_channels
-            norms.append(nn.BatchNorm2d(out_channels, affine=False))
-        self.cnns = nn.ModuleList(cnns)
-        self.norms = nn.ModuleList(norms)
-        self.lstm = nn.LSTM(batch_first=True, bidirectional=True, num_layers=5, input_size=out_channels, hidden_size=len(characters))
-        self.max_pool = nn.MaxPool2d(kernel_size=2)
+        self.cnn0 = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(3, 3))
+        self.cnn1 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=(3, 3))
+        self.cnn2 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=(3, 3))
+        self.cnn3 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=(3, 3))
+        self.cnn4 = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=(3, 3))
+        self.norm512 = nn.BatchNorm2d(512, affine=False)
+        self.lstm = nn.LSTM(batch_first=True, bidirectional=True, num_layers=2, input_size=512, hidden_size=len(characters))
+        self.max_pool22 = nn.MaxPool2d(kernel_size=2)
+        self.max_pool12 = nn.MaxPool2d(kernel_size=(1,2))
 
 
     def initialize_weights(self):
-        for cnn in self.cnns:
-            nn.init.xavier_uniform_(cnn.weight)
+        nn.init.xavier_uniform_(self.cnn0.weight)
+        nn.init.xavier_uniform_(self.cnn1.weight)
+        nn.init.xavier_uniform_(self.cnn2.weight)
+        nn.init.xavier_uniform_(self.cnn3.weight)
+        nn.init.xavier_uniform_(self.cnn4.weight)
 
     def forward(self, x):
         """
@@ -34,11 +34,13 @@ class CRNN(nn.Module):
         :return: Tensor of shape (batch, sequence, len(characters))
         """
         batch_size, _, _, _ = x.shape
-        for i, cnn in enumerate(self.cnns):
-            x = cnn(x)
-            x = nn.functional.relu(x)
-            x = self.max_pool(x)
-            x = self.norms[i](x)
+        x = self.max_pool22(nn.functional.relu(self.cnn0(x)))
+        x = self.max_pool22(nn.functional.relu(self.cnn1(x)))
+        x = nn.functional.relu(self.cnn2(x))
+        x = nn.functional.relu(self.cnn3(x))
+        x = self.max_pool12(x)
+        x = nn.functional.relu(self.cnn4(x))
+        x = self.norm512(x)
         # Compress vertically
         x = x.sum(2)  # batch_size, in_channels, width = x.shape
         x = x.permute(0, 2, 1)  # batch_size, width, in_channels = x.shape
