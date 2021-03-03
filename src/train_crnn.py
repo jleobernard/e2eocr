@@ -73,7 +73,7 @@ ds = get_dataset(data_path, width=WIDTH, height=HEIGHT, target_length=MAX_SENTEN
 #imshow(ds[5][0])
 #exit()
 print(f"...dataset loaded")
-dataloader = DataLoader(ds, batch_size=int(len(ds) / 3), shuffle=True)
+dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=True)
 model = to_best_device(CRNN())
 best_model = to_best_device(CRNN())
 
