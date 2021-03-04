@@ -71,6 +71,30 @@ class CustomDataSetSimple(Dataset):
         return self.samples[idx], self.labels[idx]
 
 
+class CustomRawDataSet(Dataset):
+    def __init__(self, root_dir):
+        file_list = os.listdir(root_dir)
+        self.labels = [f[:-4] for f in file_list]
+        file_list = [os.path.join(root_dir, f) for f in file_list if f.endswith('.jpg')]
+        raw_images = [io.imread(f) for f in file_list]
+        heights = [image.shape[0] for image in raw_images]
+        widths = [image.shape[1] for image in raw_images]
+        max_height = max(heights)
+        max_width = max(widths)
+        transform = transforms.Compose([transforms.ToPILImage(),
+            MyPad((max_height, max_width)),
+            transforms.Grayscale(),
+            transforms.ToTensor()])
+        self.images = [transform(image) for image in raw_images]
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        image = self.images[idx]
+        return image, torch.tensor(sentence_to_list(self.labels[idx], 200), dtype=torch.float32)
+
+
 class CustomDataSet(Dataset):
     def __init__(self, root_dir, transform, target_length):
         self.root_dir = root_dir
@@ -106,4 +130,5 @@ def get_dataset(path, width=50, height=50, target_length=100):
                                     transforms.Grayscale(),
                                     transforms.ToTensor()])
     return CustomDataSet(root_dir=path, transform=transform, target_length=target_length)
+
 

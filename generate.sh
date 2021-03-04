@@ -1,0 +1,1 @@
+trdg -c 10 -w 5 -f 64 --output_dir data/train-trdg

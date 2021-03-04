@@ -10,7 +10,7 @@ from model.simple_mdlstm import SimpleModelMDLSTM
 from model.simple_model import SimpleModel
 from utils.characters import index_char, blank_character, void_character, characters
 from utils.data_utils import parse_args
-from utils.image_helper import get_dataset, CustomDataSetSimple
+from utils.image_helper import get_dataset, CustomDataSetSimple, CustomRawDataSet
 from utils.tensor_helper import do_load_model, to_best_device
 
 if torch.cuda.is_available():
@@ -30,7 +30,7 @@ MAX_SENTENCE_LENGTH = int(args.sentence)
 
 
 print(f"Loading dataset from {data_path}...")
-ds = get_dataset(data_path, width=WIDTH, height=HEIGHT, target_length=MAX_SENTENCE_LENGTH)
+ds = CustomRawDataSet(root_dir=data_path)
 print(f"...dataset loaded")
 dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False)
 model = to_best_device(CRNN())

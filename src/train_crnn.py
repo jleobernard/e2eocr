@@ -12,33 +12,12 @@ from model.crnn import CRNN
 from model.my_lstm import CustomLSTM
 from model.simple_mdlstm import SimpleModelMDLSTM
 from model.simple_model import SimpleModel
-from utils.image_helper import CustomDataSetSimple, get_dataset
+from utils.characters import get_sentence_length
+from utils.data_utils import parse_args
+from utils.image_helper import CustomDataSetSimple, get_dataset, CustomRawDataSet
 from utils.tensor_helper import to_best_device, do_load_model
 
-parser = argparse.ArgumentParser(description='Train the model.')
-parser.add_argument('--data', dest='data_path',
-                    help='Path to the folder containing training data', required=True)
-parser.add_argument('--models', dest='models_path',
-                    help='Path to the folder containing the models (load and save)', required=True)
-parser.add_argument('--epoch', dest='epoch', default=10,
-                    help='Path to the folder containing training data')
-parser.add_argument('--batch', dest='batch', default=10,
-                    help='Number of images per batch')
-parser.add_argument('--height', dest='height', default=80,
-                    help='Height of source images')
-parser.add_argument('--width', dest='width', default=80,
-                    help='Width of source images')
-parser.add_argument('--sentence', dest='sentence', default=10,
-                    help='Max length of sentences')
-parser.add_argument('--lr', dest='lr', default=0.0001,
-                    help='Learning rate')
-parser.add_argument('--max-lr', dest='max_lr', default=0.1,
-                    help='Max learning rate')
-parser.add_argument('--load', dest='load', default=False,
-                    help='Load model if true')
-parser.add_argument('--feat-mul', dest='feat_mul', default=15,
-                    help='Load model if true')
-args = parser.parse_args()
+args = parse_args()
 
 data_path = args.data_path
 models_rep = args.models_path
@@ -50,8 +29,6 @@ MAX_SENTENCE_LENGTH = int(args.sentence)
 LEARNING_RATE = float(args.lr)
 MAX_LR = float(args.max_lr)
 features_multiplicity = int(args.feat_mul)
-HEIGHT = int(args.height)
-WIDTH = int(args.width)
 
 
 if torch.cuda.is_available():
@@ -68,8 +45,7 @@ def imshow(inp):
     plt.show()
 
 print(f"Loading dataset ...")
-#ds = CustomDataSetSimple(nb_digit=MAX_SENTENCE_LENGTH, nb_samples=1000)
-ds = get_dataset(data_path, width=WIDTH, height=HEIGHT, target_length=MAX_SENTENCE_LENGTH)
+ds = CustomRawDataSet(root_dir=data_path)
 #imshow(ds[5][0])
 #exit()
 print(f"...dataset loaded")
@@ -98,6 +74,8 @@ start = time.time()
 losses = []
 min_loss = sys.maxsize
 do_save = True
+
+
 for epoch in range(NUM_EPOCHS):
     running_loss = 0.0
     for i, batch_data in enumerate(dataloader):
@@ -109,9 +87,9 @@ for epoch in range(NUM_EPOCHS):
         # Because outputs is of dimension (batch_size, seq, nb_chars) we have to permute the dimensions to fit cttloss
         # expected inputs
         outputs = outputs.permute(1, 0, 2) # seq, batch_size, nb_chars = outputs.shape
-        curr_loss = loss(nn.functional.log_softmax(outputs, 2), labels.flatten(),
+        curr_loss = loss(nn.functional.log_softmax(outputs, 2), labels,
                          torch.tensor(outputs.shape[1] * [outputs.shape[0]], dtype=torch.long),
-                         torch.tensor([len(label) for label in labels], dtype=torch.long))
+                         torch.tensor([get_sentence_length(label) for label in labels], dtype=torch.long))
         curr_loss.backward()
         optimizer.step()
         scheduler.step()

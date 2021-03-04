@@ -30,9 +30,9 @@ def index_char(idx):
     return 'Ø'
 
 
-def sentence_to_list(sentence: str, padding: int=100) -> list:
-    #return ([char_index(char) for char in sentence] + padding * [pad_id])[:padding]
-    return [char_index(char) for char in sentence]
+def sentence_to_list(sentence: str, padding: int = 100) -> list:
+    return ([char_index(char) for char in sentence] + padding * [pad_id])[:padding]
+    #return [char_index(char) for char in sentence]
 
 
 def get_sentence_length(sentence: torch.Tensor) -> int:

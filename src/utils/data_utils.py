@@ -25,10 +25,6 @@ def parse_args():
                         help='Path to the folder containing training data')
     parser.add_argument('--batch', dest='batch', default=10,
                         help='Number of images per batch')
-    parser.add_argument('--height', dest='height', default=80,
-                        help='Height of source images')
-    parser.add_argument('--width', dest='width', default=80,
-                        help='Width of source images')
     parser.add_argument('--sentence', dest='sentence', default=10,
                         help='Max length of sentences')
     parser.add_argument('--lr', dest='lr', default=0.0001,
