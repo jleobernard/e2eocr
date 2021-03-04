@@ -24,8 +24,6 @@ data_path = args.data_path
 models_rep = args.models_path
 
 BATCH_SIZE = int(args.batch)
-HEIGHT = int(args.height)
-WIDTH = int(args.width)
 MAX_SENTENCE_LENGTH = int(args.sentence)
 
 
