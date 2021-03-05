@@ -14,10 +14,12 @@ class CRNN(nn.Module):
         self.cnn2 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=(3, 3))
         self.cnn3 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=(3, 3))
         self.cnn4 = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=(3, 3))
+        self.cnn5 = nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3, 3))
+        self.cnn6 = nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(2, 2))
         self.norm512 = nn.BatchNorm2d(512, affine=False)
         self.lstm = nn.LSTM(batch_first=True, bidirectional=True, num_layers=2, input_size=512, hidden_size=len(characters))
         self.max_pool22 = nn.MaxPool2d(kernel_size=2)
-        self.max_pool12 = nn.MaxPool2d(kernel_size=(1,2))
+        self.max_pool12 = nn.MaxPool2d(kernel_size=(1, 2))
 
 
     def initialize_weights(self):
@@ -26,6 +28,8 @@ class CRNN(nn.Module):
         nn.init.xavier_uniform_(self.cnn2.weight)
         nn.init.xavier_uniform_(self.cnn3.weight)
         nn.init.xavier_uniform_(self.cnn4.weight)
+        nn.init.xavier_uniform_(self.cnn5.weight)
+        nn.init.xavier_uniform_(self.cnn6.weight)
 
     def forward(self, x):
         """
@@ -41,6 +45,10 @@ class CRNN(nn.Module):
         x = self.max_pool12(x)
         x = nn.functional.relu(self.cnn4(x))
         x = self.norm512(x)
+        x = nn.functional.relu(self.cnn5(x))
+        x = self.norm512(x)
+        x = self.max_pool12(x)
+        x = nn.functional.relu(self.cnn6(x))
         # Compress vertically
         x = x.sum(2)  # batch_size, in_channels, width = x.shape
         x = x.permute(0, 2, 1)  # batch_size, width, in_channels = x.shape
