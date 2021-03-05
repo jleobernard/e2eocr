@@ -66,11 +66,11 @@ model.train()
 loss = to_best_device(nn.CTCLoss(blank=0, zero_infinity=True, reduction="sum"))
 #optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 optimizer = torch.optim.Adadelta(model.parameters(), lr=LEARNING_RATE)
-scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
-                                          max_lr=MAX_LR,
-                                          steps_per_epoch=len(ds),
-                                          epochs=NUM_EPOCHS,
-                                          anneal_strategy='linear')
+#scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
+#                                          max_lr=MAX_LR,
+#                                          steps_per_epoch=len(ds),
+#                                          epochs=NUM_EPOCHS,
+#                                          anneal_strategy='linear')
 start = time.time()
 losses = []
 min_loss = sys.maxsize
@@ -93,7 +93,7 @@ for epoch in range(NUM_EPOCHS):
                          torch.tensor([get_sentence_length(label) for label in labels], dtype=torch.long))
         curr_loss.backward()
         optimizer.step()
-        scheduler.step()
+        #scheduler.step()
         running_loss += curr_loss.item()
     print(f'[{epoch}]Loss is {running_loss}')
     losses.append(running_loss)
