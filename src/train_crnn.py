@@ -64,7 +64,8 @@ else:
 
 model.train()
 loss = to_best_device(nn.CTCLoss(blank=0, zero_infinity=True, reduction="sum"))
-optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+#optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+optimizer = torch.optim.Adadelta(model.parameters(), lr=LEARNING_RATE)
 scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
                                           max_lr=MAX_LR,
                                           steps_per_epoch=len(ds),
