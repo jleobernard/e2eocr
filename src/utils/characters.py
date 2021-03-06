@@ -36,7 +36,7 @@ def sentence_to_list(sentence: str, padding: int = 100) -> list:
 
 
 def get_sentence_length(sentence: torch.Tensor) -> int:
-    return (sentence == pad_id).nonzero(as_tuple=True)[0][0].item()
+    return (sentence == pad_id).nonzero()[0][0].item()
 
 
 
