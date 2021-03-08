@@ -1,8 +1,7 @@
 import torch.nn as nn
-from model.mdlstm_conv_block import MDLSTMConvBlock
-from utils.characters import characters, nb_characters
+import torch.nn.init as init
 
-from utils.tensor_helper import get_dim_out
+from utils.characters import characters, nb_characters
 
 
 class CRNN(nn.Module):
@@ -30,6 +29,11 @@ class CRNN(nn.Module):
         nn.init.xavier_uniform_(self.cnn4.weight)
         nn.init.xavier_uniform_(self.cnn5.weight)
         nn.init.xavier_uniform_(self.cnn6.weight)
+        for param in self.lstm.parameters():
+            if len(param.shape) >= 2:
+                init.orthogonal_(param.data)
+            else:
+                init.normal_(param.data)
 
     def forward(self, x):
         """
