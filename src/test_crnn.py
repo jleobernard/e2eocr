@@ -1,16 +1,12 @@
 import pandas as pd
 import time
-import sys
 import torch
 from torch.utils.data import DataLoader
 
 from model.crnn import CRNN
-from model.paragraph_reader import ParagraphReader
-from model.simple_mdlstm import SimpleModelMDLSTM
-from model.simple_model import SimpleModel
-from utils.characters import index_char, blank_character, void_character, characters, get_sentence_length
+from utils.characters import characters, get_sentence_length_test
 from utils.data_utils import parse_args
-from utils.image_helper import get_dataset, CustomDataSetSimple, CustomRawDataSet
+from utils.image_helper import CustomRawDataSet
 from utils.tensor_helper import do_load_model, to_best_device
 
 if torch.cuda.is_available():
@@ -48,7 +44,7 @@ def from_target_labels(target: torch.Tensor) -> str:
     :return: a trimmed string containing only relevant characters
     """
     target_array = target.cpu().numpy().astype(int)
-    target_array = target_array[:get_sentence_length(target_array)]
+    target_array = target_array[:get_sentence_length_test(target_array)]
     return ''.join([characters[i] for i in target_array])
 
 

@@ -9,7 +9,7 @@ def split(word: str) -> list:
 blank_character = '<BLANK>'
 void_character = '<NOTHING>'
 #characters = [blank_character, void_character, 'a', 'b']
-characters = [blank_character, void_character] + split(string.ascii_letters) + split(string.digits) + [" ", ",", '"', "'"]
+characters = [blank_character, void_character] + split(string.ascii_letters) + split(string.digits) + [" ", ",", '"', "'", "_", "-"]
 nb_characters = len(characters)
 
 blank_id = characters.index(blank_character)
@@ -21,6 +21,7 @@ def char_index(char: chr) -> int:
     try:
         return characters.index(char)
     except ValueError:
+        print(f"Could not find character {char}")
         return 0
 
 
@@ -36,6 +37,9 @@ def sentence_to_list(sentence: str, padding: int = 100) -> list:
 
 
 def get_sentence_length(sentence: torch.Tensor) -> int:
+    return (sentence == pad_id).nonzero(as_tuple=True)[0][0].item()
+
+def get_sentence_length_test(sentence: torch.Tensor) -> int:
     return (sentence == pad_id).nonzero()[0][0].item()
 
 
