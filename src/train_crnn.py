@@ -104,8 +104,8 @@ for epoch in range(NUM_EPOCHS):
         labels = to_best_device(labels_cpu)
         optimizer.zero_grad()
         outputs = model(data)
-        for output in outputs:
-            print(from_predicted_labels(output))
+        #for output in outputs:
+        #    print(from_predicted_labels(output))
         # Because outputs is of dimension (batch_size, seq, nb_chars) we have to permute the dimensions to fit cttloss
         # expected inputs
         outputs = outputs.permute(1, 0, 2) # seq, batch_size, nb_chars = outputs.shape
