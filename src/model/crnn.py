@@ -15,6 +15,7 @@ class CRNN(nn.Module):
         self.cnn4 = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=(3, 3))
         self.cnn5 = nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3, 3))
         self.cnn6 = nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(2, 2))
+        self.cnn7 = nn.Conv2d(in_channels=512, out_channels=len(characters), kernel_size=(1, 1))
         self.norm512 = nn.BatchNorm2d(512, affine=False)
         self.lstm = nn.LSTM(batch_first=True, bidirectional=True, num_layers=2, input_size=512, hidden_size=256)
         self.lstm_out = nn.LSTM(batch_first=True, bidirectional=True, num_layers=1, input_size=256, hidden_size=len(characters))
@@ -30,6 +31,7 @@ class CRNN(nn.Module):
         nn.init.xavier_uniform_(self.cnn4.weight)
         nn.init.xavier_uniform_(self.cnn5.weight)
         nn.init.xavier_uniform_(self.cnn6.weight)
+        nn.init.xavier_uniform_(self.cnn7.weight)
         for param in self.lstm.parameters():
             if len(param.shape) >= 2:
                 init.orthogonal_(param.data)
@@ -51,19 +53,19 @@ class CRNN(nn.Module):
         x = self.max_pool22(nn.functional.relu(self.cnn0(x)))
         x = self.max_pool22(nn.functional.relu(self.cnn1(x)))
         x = nn.functional.relu(self.cnn2(x))
-        x = nn.functional.relu(self.cnn3(x))
-        x = self.max_pool12(x)
+        x = self.max_pool12(nn.functional.relu(self.cnn3(x)))
         x = nn.functional.relu(self.cnn4(x))
-        x = self.norm512(x)
+        #x = self.norm512(x)
         x = nn.functional.relu(self.cnn5(x))
-        x = self.norm512(x)
+        #x = self.norm512(x)
         x = self.max_pool12(x)
         x = nn.functional.relu(self.cnn6(x))
+        x = self.cnn7(x)
         # Compress vertically
         x = x.sum(2)  # batch_size, in_channels, width = x.shape
         x = x.permute(0, 2, 1)  # batch_size, width, in_channels = x.shape
-        x, _ = self.lstm(x)
-        x = (x[:, :, :256] + x[:, :, 256:]) / 2
-        x, _ = self.lstm_out(x)
-        x = (x[:, :, :nb_characters] + x[:, :, nb_characters:]) / 2
+        #x, _ = self.lstm(x)
+        #x = (x[:, :, :256] + x[:, :, 256:]) / 2
+        #x, _ = self.lstm_out(x)
+        #x = (x[:, :, :nb_characters] + x[:, :, nb_characters:]) / 2
         return x

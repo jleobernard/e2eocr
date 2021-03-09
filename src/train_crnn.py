@@ -1,4 +1,3 @@
-import argparse
 import os
 
 import matplotlib.pyplot as plt
@@ -9,12 +8,9 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from model.crnn import CRNN
-from model.my_lstm import CustomLSTM
-from model.simple_mdlstm import SimpleModelMDLSTM
-from model.simple_model import SimpleModel
-from utils.characters import get_sentence_length
+from utils.characters import get_sentence_length, characters, get_selected_character
 from utils.data_utils import parse_args
-from utils.image_helper import CustomDataSetSimple, get_dataset, CustomRawDataSet
+from utils.image_helper import CustomRawDataSet
 from utils.tensor_helper import to_best_device, do_load_model
 
 args = parse_args()
@@ -64,9 +60,9 @@ else:
 
 model.train()
 loss = to_best_device(nn.CTCLoss(blank=0, zero_infinity=True, reduction="mean"))
-optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', cooldown=0, verbose=True, patience=10)
-#optimizer = torch.optim.Adadelta(model.parameters(), lr=LEARNING_RATE)
+#optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+#scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', cooldown=0, verbose=True, patience=10)
+optimizer = torch.optim.Adadelta(model.parameters())
 #scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
 #                                          max_lr=MAX_LR,
 #                                          steps_per_epoch=len(ds),
@@ -78,6 +74,28 @@ min_loss = sys.maxsize
 do_save = True
 
 
+def from_predicted_labels(predicted: torch.Tensor) -> str:
+    """
+
+    :param predicted: tensor of shape (L, X) with :
+    - L being the length of the sequence
+    - X being the size of the list of known characters
+    and each element containing the index of one of the character
+    :return: a trimmed string containing only relevant characters
+    """
+    as_np = predicted.detach()
+    all_chars = [get_selected_character(i) for _, i in enumerate(as_np)]
+    final = []
+    current_char = None
+    for char in all_chars:
+        if not char == current_char:
+            current_char = char
+            if char == 0:
+                pass
+            else:
+                final.append(char)
+    return ''.join([str(characters[i]) for i in final])
+
 for epoch in range(NUM_EPOCHS):
     running_loss = 0.0
     for i, batch_data in enumerate(dataloader):
@@ -86,6 +104,8 @@ for epoch in range(NUM_EPOCHS):
         labels = to_best_device(labels_cpu)
         optimizer.zero_grad()
         outputs = model(data)
+        for output in outputs:
+            print(from_predicted_labels(output))
         # Because outputs is of dimension (batch_size, seq, nb_chars) we have to permute the dimensions to fit cttloss
         # expected inputs
         outputs = outputs.permute(1, 0, 2) # seq, batch_size, nb_chars = outputs.shape
@@ -95,7 +115,7 @@ for epoch in range(NUM_EPOCHS):
         curr_loss.backward()
         optimizer.step()
         running_loss += curr_loss.item()
-    scheduler.step(round(running_loss * 100))
+    #scheduler.step(round(running_loss * 1000))
     print(f'[{epoch}]Loss is {running_loss}')
     losses.append(running_loss)
     if running_loss < min_loss:

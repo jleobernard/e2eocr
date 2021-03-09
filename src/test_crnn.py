@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from model.crnn import CRNN
-from utils.characters import characters, get_sentence_length_test
+from utils.characters import characters, get_sentence_length_test, get_selected_character
 from utils.data_utils import parse_args
 from utils.image_helper import CustomRawDataSet
 from utils.tensor_helper import do_load_model, to_best_device
@@ -46,10 +46,6 @@ def from_target_labels(target: torch.Tensor) -> str:
     target_array = target.cpu().numpy().astype(int)
     target_array = target_array[:get_sentence_length_test(target_array)]
     return ''.join([characters[i] for i in target_array])
-
-
-def get_selected_character(i: torch.Tensor):
-    return torch.argmax(i).item()
 
 
 def from_predicted_labels(predicted: torch.Tensor) -> str:

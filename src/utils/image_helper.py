@@ -82,7 +82,7 @@ class CustomRawDataSet(Dataset):
         max_height = max(heights)
         max_width = max(widths)
         transform = transforms.Compose([transforms.ToPILImage(),
-            MyPad((max_height, max_width)),
+            MyPad((max_height, max_width + 64)),
             transforms.Grayscale(),
             transforms.ToTensor()])
         self.images = [transform(image) for image in raw_images]

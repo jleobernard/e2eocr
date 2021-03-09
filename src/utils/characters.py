@@ -44,3 +44,9 @@ def get_sentence_length_test(sentence: torch.Tensor) -> int:
 
 
 
+
+def get_selected_character(i: torch.Tensor):
+    return torch.argmax(i).item()
+
+
+
