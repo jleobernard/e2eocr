@@ -95,7 +95,7 @@ for epoch in range(NUM_EPOCHS):
         curr_loss.backward()
         optimizer.step()
         running_loss += curr_loss.item()
-    scheduler.step(running_loss)
+    scheduler.step(round(running_loss * 100))
     print(f'[{epoch}]Loss is {running_loss}')
     losses.append(running_loss)
     if running_loss < min_loss:
