@@ -8,7 +8,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from model.crnn import CRNN
-from utils.characters import get_sentence_length, characters, get_selected_character, from_target_labels
+from utils.characters import get_sentence_length, characters, get_selected_character, from_target_labels, \
+    from_predicted_labels
 from utils.data_utils import parse_args
 from utils.image_helper import CustomRawDataSet
 from utils.tensor_helper import to_best_device, do_load_model
@@ -42,10 +43,13 @@ def imshow(inp):
 
 print(f"Loading dataset ...")
 ds = CustomRawDataSet(root_dir=data_path)
-#imshow(ds[5][0])
+len_train = int(len(ds) * 0.8)
+train_set, val_set = torch.utils.data.random_split(ds, [len_train, len(ds) - len_train])
+#imshow(train_set[5][0])
 #exit()
 print(f"...dataset loaded")
-dataloader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=True)
+dataloader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True)
+dataloader_val = DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False)
 model = to_best_device(CRNN())
 best_model = to_best_device(CRNN())
 
@@ -73,29 +77,7 @@ losses = []
 min_loss = sys.maxsize
 do_save = True
 
-
-def from_predicted_labels(predicted: torch.Tensor) -> str:
-    """
-
-    :param predicted: tensor of shape (L, X) with :
-    - L being the length of the sequence
-    - X being the size of the list of known characters
-    and each element containing the index of one of the character
-    :return: a trimmed string containing only relevant characters
-    """
-    as_np = predicted.detach()
-    all_chars = [get_selected_character(i) for _, i in enumerate(as_np)]
-    final = []
-    current_char = None
-    for char in all_chars:
-        if not char == current_char:
-            current_char = char
-            if char == 0:
-                pass
-            else:
-                final.append(char)
-    return ''.join([str(characters[i]) for i in final])
-
+val_losses = []
 
 for epoch in range(NUM_EPOCHS):
     running_loss = 0.0

@@ -59,3 +59,26 @@ def from_target_labels(target: torch.Tensor) -> str:
     target_array = target.cpu().numpy().astype(int)
     target_array = target_array[:get_sentence_length_test(target_array)]
     return ''.join([characters[i] for i in target_array])
+
+
+def from_predicted_labels(predicted: torch.Tensor) -> str:
+    """
+
+    :param predicted: tensor of shape (L, X) with :
+    - L being the length of the sequence
+    - X being the size of the list of known characters
+    and each element containing the index of one of the character
+    :return: a trimmed string containing only relevant characters
+    """
+    as_np = predicted.detach()
+    all_chars = [get_selected_character(i) for _, i in enumerate(as_np)]
+    final = []
+    current_char = None
+    for char in all_chars:
+        if not char == current_char:
+            current_char = char
+            if char == 0:
+                pass
+            else:
+                final.append(char)
+    return ''.join([str(characters[i]) for i in final])
