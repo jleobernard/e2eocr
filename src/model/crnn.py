@@ -57,7 +57,7 @@ class CRNN(nn.Module):
         x = nn.functional.relu(self.cnn4(x))
         x = self.norm512(x)
         x = nn.functional.relu(self.cnn5(x))
-        x = self.norm512(x)
+        #x = self.norm512(x)
         x = self.max_pool12(x)
         x = nn.functional.relu(self.cnn6(x))
         x = self.cnn7(x)

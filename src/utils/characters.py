@@ -49,4 +49,13 @@ def get_selected_character(i: torch.Tensor):
     return torch.argmax(i).item()
 
 
+def from_target_labels(target: torch.Tensor) -> str:
+    """
 
+    :param target: tensor of shape (n) with n being the length of the sequence
+    and each element containing the index of one of the character
+    :return: a trimmed string containing only relevant characters
+    """
+    target_array = target.cpu().numpy().astype(int)
+    target_array = target_array[:get_sentence_length_test(target_array)]
+    return ''.join([characters[i] for i in target_array])

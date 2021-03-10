@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from model.crnn import CRNN
-from utils.characters import get_sentence_length, characters, get_selected_character
+from utils.characters import get_sentence_length, characters, get_selected_character, from_target_labels
 from utils.data_utils import parse_args
 from utils.image_helper import CustomRawDataSet
 from utils.tensor_helper import to_best_device, do_load_model
@@ -96,6 +96,7 @@ def from_predicted_labels(predicted: torch.Tensor) -> str:
                 final.append(char)
     return ''.join([str(characters[i]) for i in final])
 
+
 for epoch in range(NUM_EPOCHS):
     running_loss = 0.0
     for i, batch_data in enumerate(dataloader):
@@ -104,8 +105,8 @@ for epoch in range(NUM_EPOCHS):
         labels = to_best_device(labels_cpu)
         optimizer.zero_grad()
         outputs = model(data)
-        #for output in outputs:
-        #    print(from_predicted_labels(output))
+        if i == 0:
+            print(f"{from_target_labels(labels[0])} VS. {from_predicted_labels(outputs[0])}")
         # Because outputs is of dimension (batch_size, seq, nb_chars) we have to permute the dimensions to fit cttloss
         # expected inputs
         outputs = outputs.permute(1, 0, 2) # seq, batch_size, nb_chars = outputs.shape
