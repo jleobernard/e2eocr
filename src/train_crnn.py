@@ -107,7 +107,7 @@ for epoch in range(NUM_EPOCHS + int(NUM_EPOCHS / val_freq)):
         optimizer.zero_grad()
         outputs = model(data)
         if i == 0:
-            print(f"{from_target_labels(labels[0])} VS. {from_predicted_labels(outputs[0])}")
+            print(f"[{epoch}]{from_target_labels(labels[0])} VS. {from_predicted_labels(outputs[0])}")
         # Because outputs is of dimension (batch_size, seq, nb_chars) we have to permute the dimensions to fit cttloss
         # expected inputs
         outputs = outputs.permute(1, 0, 2) # seq, batch_size, nb_chars = outputs.shape
