@@ -37,4 +37,6 @@ def parse_args():
                         help='Load model if true')
     parser.add_argument('--val-freq', dest='val_freq', default=5,
                         help='Validation frequency')
+    parser.add_argument('--val-patience', dest='val_patience', default=5,
+                        help='Validation patience')
     return parser.parse_args()

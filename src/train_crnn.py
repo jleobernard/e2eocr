@@ -27,6 +27,7 @@ LEARNING_RATE = float(args.lr)
 MAX_LR = float(args.max_lr)
 features_multiplicity = int(args.feat_mul)
 val_freq = int(args.val_freq)
+val_patience = int(args.val_patience)
 
 
 if torch.cuda.is_available():
@@ -44,10 +45,10 @@ def imshow(inp):
 
 
 def should_stop_training(losses) -> bool:
-    if len(losses) > 5:
-        selected_values = losses[-5:]
+    if len(losses) > val_patience:
+        selected_values = losses[-val_patience:]
         idx_min = selected_values.index(min(selected_values))
-        return idx_min >= len(selected_values) / 2
+        return idx_min < (val_patience / 2 - 1)
     else:
         return False
 
@@ -92,7 +93,7 @@ val_losses = []
 for epoch in range(NUM_EPOCHS + int(NUM_EPOCHS / val_freq)):
     running_loss = 0.0
     if epoch > 0 and epoch % (val_freq - 1) == 0:
-        print("Validating...")
+        print(f"[{epoch}]Validating...")
         validation = True
         df = dataloader_val
     else:
@@ -134,6 +135,7 @@ for epoch in range(NUM_EPOCHS + int(NUM_EPOCHS / val_freq)):
             torch.save(best_model.state_dict(), f"{models_rep}/best.pt")
         do_save = False
     if should_stop:
+        print(f"Early stopping at {epoch}")
         break
 end = time.time()
 print(f"It took {end - start}")
@@ -141,4 +143,5 @@ if do_save:
     print(f'[END] Best loss was {min_loss} so we will save in best')
     torch.save(best_model.state_dict(), f"{models_rep}/best.pt")
 plt.plot(losses)
+plt.plot(val_losses)
 plt.show()
