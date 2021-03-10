@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from model.crnn import CRNN
-from utils.characters import get_sentence_length, characters, get_selected_character, from_target_labels, \
+from utils.characters import get_sentence_length, from_target_labels, \
     from_predicted_labels
 from utils.data_utils import parse_args
 from utils.image_helper import CustomRawDataSet
@@ -26,6 +26,7 @@ MAX_SENTENCE_LENGTH = int(args.sentence)
 LEARNING_RATE = float(args.lr)
 MAX_LR = float(args.max_lr)
 features_multiplicity = int(args.feat_mul)
+val_freq = int(args.val_freq)
 
 
 if torch.cuda.is_available():
@@ -40,6 +41,15 @@ def imshow(inp):
     inp = ((mean * inp) + std)
     plt.imshow(inp, cmap='gray')
     plt.show()
+
+
+def should_stop_training(losses) -> bool:
+    if len(losses) > 5:
+        selected_values = losses[-5:]
+        idx_min = selected_values.index(min(selected_values))
+        return idx_min >= len(selected_values) / 2
+    else:
+        return False
 
 print(f"Loading dataset ...")
 ds = CustomRawDataSet(root_dir=data_path)
@@ -79,9 +89,17 @@ do_save = True
 
 val_losses = []
 
-for epoch in range(NUM_EPOCHS):
+for epoch in range(NUM_EPOCHS + int(NUM_EPOCHS / val_freq)):
     running_loss = 0.0
-    for i, batch_data in enumerate(dataloader):
+    if epoch > 0 and epoch % (val_freq - 1) == 0:
+        print("Validating...")
+        validation = True
+        df = dataloader_val
+    else:
+        validation = False
+        df = dataloader
+    model.train(not validation)
+    for i, batch_data in enumerate(df):
         data_cpu, labels_cpu = batch_data
         data = to_best_device(data_cpu)
         labels = to_best_device(labels_cpu)
@@ -98,9 +116,14 @@ for epoch in range(NUM_EPOCHS):
         curr_loss.backward()
         optimizer.step()
         running_loss += curr_loss.item()
-    #scheduler.step(round(running_loss * 1000))
-    print(f'[{epoch}]Loss is {running_loss}')
-    losses.append(running_loss)
+    if validation:
+        print("...validation done")
+        val_losses.append(running_loss)
+        should_stop = should_stop_training(val_losses)
+    else:
+        print(f'[{epoch}]Loss is {running_loss}')
+        losses.append(running_loss)
+        should_stop = False
     if running_loss < min_loss:
         do_save = True
         best_model.load_state_dict(model.state_dict())
@@ -110,6 +133,8 @@ for epoch in range(NUM_EPOCHS):
             print(f'[{epoch}] Best loss so far is {min_loss} so we will save in best')
             torch.save(best_model.state_dict(), f"{models_rep}/best.pt")
         do_save = False
+    if should_stop:
+        break
 end = time.time()
 print(f"It took {end - start}")
 if do_save:

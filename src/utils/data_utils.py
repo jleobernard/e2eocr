@@ -35,4 +35,6 @@ def parse_args():
                         help='Load model if true')
     parser.add_argument('--feat-mul', dest='feat_mul', default=15,
                         help='Load model if true')
+    parser.add_argument('--val-freq', dest='val_freq', default=5,
+                        help='Validation frequency')
     return parser.parse_args()
