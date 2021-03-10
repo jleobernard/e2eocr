@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from model.crnn import CRNN
-from utils.characters import characters, get_sentence_length_test, get_selected_character
+from utils.characters import characters, get_sentence_length_test, get_selected_character, from_target_labels
 from utils.data_utils import parse_args
 from utils.image_helper import CustomRawDataSet
 from utils.tensor_helper import do_load_model, to_best_device
