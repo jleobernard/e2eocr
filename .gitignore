@@ -3,3 +3,4 @@
 *.iml
 src/__pycache__/*
 data/*
+__pycache__
