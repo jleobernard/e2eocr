@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.init as init
 
+from model.attention import SpatialAttention
 from utils.characters import characters, nb_characters
 
 
@@ -21,9 +22,11 @@ class CRNN(nn.Module):
         self.lstm_out = nn.LSTM(batch_first=True, bidirectional=True, num_layers=1, input_size=256, hidden_size=len(characters))
         self.max_pool22 = nn.MaxPool2d(kernel_size=2)
         self.max_pool12 = nn.MaxPool2d(kernel_size=(1, 2))
+        self.attn1 = SpatialAttention(needs_pos_encoding=False)
 
 
     def initialize_weights(self):
+        self.attn1.initialize_weights()
         nn.init.xavier_uniform_(self.cnn0.weight)
         nn.init.xavier_uniform_(self.cnn1.weight)
         nn.init.xavier_uniform_(self.cnn2.weight)
@@ -60,6 +63,7 @@ class CRNN(nn.Module):
         #x = self.norm512(x)
         x = self.max_pool12(x)
         x = nn.functional.relu(self.cnn6(x))
+        x = self.attn1(x)
         x = self.cnn7(x)
         # Compress vertically
         x = x.sum(2)  # batch_size, in_channels, width = x.shape
